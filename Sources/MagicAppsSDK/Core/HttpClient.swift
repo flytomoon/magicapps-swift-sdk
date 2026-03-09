@@ -32,9 +32,20 @@ public class SdkHttpClient {
     public func post<T: Decodable, B: Encodable>(
         _ path: String,
         body: B? = nil as String?,
-        authMode: AuthMode = .bearer
+        authMode: AuthMode = .bearer,
+        headers: [String: String]? = nil
     ) async throws -> T {
-        return try await request(method: "POST", path: path, body: body, authMode: authMode)
+        return try await request(method: "POST", path: path, body: body, authMode: authMode, extraHeaders: headers)
+    }
+
+    /// Make a POST request with a raw string body.
+    public func post<T: Decodable>(
+        _ path: String,
+        bodyString: String,
+        authMode: AuthMode = .bearer,
+        headers: [String: String]? = nil
+    ) async throws -> T {
+        return try await requestRaw(method: "POST", path: path, bodyData: bodyString.data(using: .utf8), authMode: authMode, extraHeaders: headers)
     }
 
     /// Make a PUT request.
@@ -60,7 +71,24 @@ public class SdkHttpClient {
         body: B?,
         query: [String: String]? = nil,
         authMode: AuthMode = .bearer,
-        retries: Int? = nil
+        retries: Int? = nil,
+        extraHeaders: [String: String]? = nil
+    ) async throws -> T {
+        var bodyData: Data? = nil
+        if let body {
+            bodyData = try JSONEncoder().encode(body)
+        }
+        return try await requestRaw(method: method, path: path, bodyData: bodyData, query: query, authMode: authMode, retries: retries, extraHeaders: extraHeaders)
+    }
+
+    private func requestRaw<T: Decodable>(
+        method: String,
+        path: String,
+        bodyData: Data?,
+        query: [String: String]? = nil,
+        authMode: AuthMode = .bearer,
+        retries: Int? = nil,
+        extraHeaders: [String: String]? = nil
     ) async throws -> T {
         let maxRetries = retries ?? defaultRetries
         let url = buildUrl(path: path, query: query)
@@ -74,9 +102,13 @@ public class SdkHttpClient {
             urlRequest.setValue(authHeader, forHTTPHeaderField: "Authorization")
         }
 
-        if let body {
-            urlRequest.httpBody = try JSONEncoder().encode(body)
+        if let extraHeaders {
+            for (key, value) in extraHeaders {
+                urlRequest.setValue(value, forHTTPHeaderField: key)
+            }
         }
+
+        urlRequest.httpBody = bodyData
 
         var attempt = 0
         while true {
