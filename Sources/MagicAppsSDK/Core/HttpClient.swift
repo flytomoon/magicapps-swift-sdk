@@ -5,7 +5,7 @@ import Foundation
 public class SdkHttpClient {
     let tokenManager: TokenManager
     private let baseUrl: URL
-    private let appId: String
+    internal let appId: String
     private let session: URLSession
     private let defaultRetries: Int
     private let retryDelay: TimeInterval

@@ -47,6 +47,12 @@ public class MagicAppsClient {
     public let appleAuth: AppleAuthService
     /// Apple IAP service (iOS only - enforced by registry).
     public let appleIap: AppleIapService
+    /// AI proxy service (all platforms).
+    public let ai: AiService
+    /// Templates service (all platforms).
+    public let templates: TemplatesService
+    /// Devices catalog service (all platforms).
+    public let devices: DevicesService
 
     public init(config: SdkConfig) {
         #if os(iOS) || os(tvOS) || os(watchOS)
@@ -64,10 +70,16 @@ public class MagicAppsClient {
         self.auth = AuthService(http: http)
         self.appleAuth = AppleAuthService(http: http)
         self.appleIap = AppleIapService(http: http)
+        self.ai = AiService(http: http)
+        self.templates = TemplatesService(http: http)
+        self.devices = DevicesService(http: http)
 
         registry.register(auth)
         registry.register(appleAuth)
         registry.register(appleIap)
+        registry.register(ai)
+        registry.register(templates)
+        registry.register(devices)
     }
 
     /// Health check - verifies connectivity to the MagicApps API.
