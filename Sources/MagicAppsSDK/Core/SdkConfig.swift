@@ -1,6 +1,6 @@
 import Foundation
 
-/// Configuration for initializing the MagicApps SDK.
+/// Configuration for initializing the Magic Apps Cloud SDK.
 public struct SdkConfig {
     /// The base URL of the MagicApps API.
     public let baseUrl: URL

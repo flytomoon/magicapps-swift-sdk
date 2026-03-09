@@ -1,6 +1,6 @@
 import Foundation
 
-/// Internal HTTP client for the MagicApps SDK.
+/// Internal HTTP client for the Magic Apps Cloud SDK.
 /// Wraps URLSession with app_id scoping, authentication, retries, and typed errors.
 public class SdkHttpClient {
     let tokenManager: TokenManager

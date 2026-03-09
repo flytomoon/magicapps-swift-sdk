@@ -1,11 +1,11 @@
 # ``MagicAppsSDK``
 
-The official MagicApps SDK for Swift — provides authentication, registry,
+The official Magic Apps Cloud SDK for Swift — provides authentication, registry,
 payments, and platform service access for iOS, macOS, watchOS, and tvOS.
 
 ## Overview
 
-MagicAppsSDK provides app_id-scoped API access with automatic authentication,
+Magic Apps Cloud SDK provides app_id-scoped API access with automatic authentication,
 modular service plugins, and platform-conditional module availability.
 
 ```swift

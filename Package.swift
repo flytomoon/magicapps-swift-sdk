@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "MagicAppsSDK",
+    name: "MagicAppsCloudSDK",
     platforms: [
         .iOS(.v16),
         .macOS(.v13),
@@ -12,18 +12,18 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "MagicAppsSDK",
-            targets: ["MagicAppsSDK"]
+            name: "MagicAppsCloudSDK",
+            targets: ["MagicAppsCloudSDK"]
         ),
     ],
     targets: [
         .target(
-            name: "MagicAppsSDK",
+            name: "MagicAppsCloudSDK",
             path: "Sources/MagicAppsSDK"
         ),
         .testTarget(
-            name: "MagicAppsSDKTests",
-            dependencies: ["MagicAppsSDK"],
+            name: "MagicAppsCloudSDKTests",
+            dependencies: ["MagicAppsCloudSDK"],
             path: "Tests/MagicAppsSDKTests"
         ),
     ]

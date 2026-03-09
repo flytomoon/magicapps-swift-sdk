@@ -23,7 +23,7 @@ public struct AppInfo: Codable, Sendable {
     }
 }
 
-/// The main MagicApps SDK client for iOS/Swift.
+/// The main Magic Apps Cloud SDK client for iOS/Swift.
 ///
 /// Provides app_id-scoped API access with automatic authentication,
 /// modular service plugins, and platform-conditional module availability.
