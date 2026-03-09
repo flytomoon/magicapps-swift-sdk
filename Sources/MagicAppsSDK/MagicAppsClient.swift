@@ -43,6 +43,8 @@ public class MagicAppsClient {
 
     /// Authentication service (all platforms).
     public let auth: AuthService
+    /// Apple Sign-In service (iOS only).
+    public let appleAuth: AppleAuthService
     /// Apple IAP service (iOS only - enforced by registry).
     public let appleIap: AppleIapService
 
@@ -60,9 +62,11 @@ public class MagicAppsClient {
         self.registry = ServiceRegistry(platform: platform)
 
         self.auth = AuthService(http: http)
+        self.appleAuth = AppleAuthService(http: http)
         self.appleIap = AppleIapService(http: http)
 
         registry.register(auth)
+        registry.register(appleAuth)
         registry.register(appleIap)
     }
 
