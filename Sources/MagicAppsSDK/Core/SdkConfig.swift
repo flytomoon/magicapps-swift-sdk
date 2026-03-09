@@ -1,0 +1,67 @@
+import Foundation
+
+/// Configuration for initializing the MagicApps SDK.
+public struct SdkConfig {
+    /// The base URL of the MagicApps API.
+    public let baseUrl: URL
+    /// The app_id that scopes all API requests to a specific tenant.
+    public let appId: String
+    /// Optional Bearer JWT token for user authentication.
+    public var accessToken: String?
+    /// Optional refresh token for automatic token renewal.
+    public var refreshToken: String?
+    /// Optional owner token for owner-level authentication.
+    public var ownerToken: String?
+    /// Number of retries for failed requests (default: 2).
+    public var retries: Int
+    /// Base delay between retries in seconds (default: 0.25).
+    public var retryDelay: TimeInterval
+    /// Custom URLSession for requests (defaults to .shared).
+    public var session: URLSession
+    /// Callback invoked when tokens are refreshed.
+    public var onTokenRefresh: ((TokenPair) -> Void)?
+    /// Callback invoked when token refresh fails.
+    public var onAuthError: ((SdkError) -> Void)?
+
+    public init(
+        baseUrl: URL,
+        appId: String,
+        accessToken: String? = nil,
+        refreshToken: String? = nil,
+        ownerToken: String? = nil,
+        retries: Int = 2,
+        retryDelay: TimeInterval = 0.25,
+        session: URLSession = .shared,
+        onTokenRefresh: ((TokenPair) -> Void)? = nil,
+        onAuthError: ((SdkError) -> Void)? = nil
+    ) {
+        self.baseUrl = baseUrl
+        self.appId = appId
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+        self.ownerToken = ownerToken
+        self.retries = retries
+        self.retryDelay = retryDelay
+        self.session = session
+        self.onTokenRefresh = onTokenRefresh
+        self.onAuthError = onAuthError
+    }
+}
+
+/// A pair of access + refresh tokens.
+public struct TokenPair {
+    public let accessToken: String
+    public let refreshToken: String?
+
+    public init(accessToken: String, refreshToken: String? = nil) {
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+    }
+}
+
+/// Auth mode for a request.
+public enum AuthMode {
+    case bearer
+    case owner
+    case none
+}
