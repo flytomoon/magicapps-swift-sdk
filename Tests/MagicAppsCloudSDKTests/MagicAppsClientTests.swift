@@ -1,5 +1,5 @@
 import XCTest
-@testable import MagicAppsSDK
+@testable import MagicAppsCloudSDK
 
 final class MagicAppsClientTests: XCTestCase {
 
