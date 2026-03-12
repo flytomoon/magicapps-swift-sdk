@@ -2,6 +2,8 @@ import Foundation
 
 /// Manages JWT access tokens and owner tokens for the SDK.
 /// Handles automatic token refresh when a refresh token is available.
+/// Tokens are persisted to the configured ``TokenStorage`` backend
+/// (Keychain by default) so they survive app restarts.
 public actor TokenManager {
     private var accessToken: String?
     private var refreshToken: String?
@@ -10,14 +12,34 @@ public actor TokenManager {
     private let baseUrl: URL
     private let session: URLSession
     private let onTokenRefresh: ((TokenPair) -> Void)?
+    private let storage: TokenStorage
 
     init(config: SdkConfig) {
-        self.accessToken = config.accessToken
-        self.refreshToken = config.refreshToken
-        self.ownerToken = config.ownerToken
         self.baseUrl = config.baseUrl
         self.session = config.session
         self.onTokenRefresh = config.onTokenRefresh
+        self.storage = config.tokenStorage
+
+        // Load persisted tokens from storage, then override with any
+        // tokens explicitly provided in the config.
+        let storedAccess = try? storage.load(key: TokenStorageKey.accessToken)
+        let storedRefresh = try? storage.load(key: TokenStorageKey.refreshToken)
+        let storedOwner = try? storage.load(key: TokenStorageKey.ownerToken)
+
+        self.accessToken = config.accessToken ?? storedAccess
+        self.refreshToken = config.refreshToken ?? storedRefresh
+        self.ownerToken = config.ownerToken ?? storedOwner
+
+        // Persist any explicitly provided tokens so they are available next launch.
+        if let token = config.accessToken {
+            try? storage.save(key: TokenStorageKey.accessToken, value: token)
+        }
+        if let token = config.refreshToken {
+            try? storage.save(key: TokenStorageKey.refreshToken, value: token)
+        }
+        if let token = config.ownerToken {
+            try? storage.save(key: TokenStorageKey.ownerToken, value: token)
+        }
     }
 
     /// Get the current access token, refreshing if expired.
@@ -50,18 +72,28 @@ public actor TokenManager {
         }
     }
 
-    /// Update stored tokens.
+    /// Update stored tokens. Also persists to the configured storage backend.
     func setTokens(accessToken: String? = nil, refreshToken: String? = nil, ownerToken: String? = nil) {
-        if let accessToken { self.accessToken = accessToken }
-        if let refreshToken { self.refreshToken = refreshToken }
-        if let ownerToken { self.ownerToken = ownerToken }
+        if let accessToken {
+            self.accessToken = accessToken
+            try? storage.save(key: TokenStorageKey.accessToken, value: accessToken)
+        }
+        if let refreshToken {
+            self.refreshToken = refreshToken
+            try? storage.save(key: TokenStorageKey.refreshToken, value: refreshToken)
+        }
+        if let ownerToken {
+            self.ownerToken = ownerToken
+            try? storage.save(key: TokenStorageKey.ownerToken, value: ownerToken)
+        }
     }
 
-    /// Clear all stored tokens.
+    /// Clear all stored tokens from memory and persistent storage.
     func clearTokens() {
         accessToken = nil
         refreshToken = nil
         ownerToken = nil
+        try? storage.deleteAll()
     }
 
     private func isTokenExpired(_ token: String) -> Bool {
@@ -104,6 +136,8 @@ public actor TokenManager {
                   httpResponse.statusCode == 200 else {
                 accessToken = nil
                 refreshToken = nil
+                try? storage.delete(key: TokenStorageKey.accessToken)
+                try? storage.delete(key: TokenStorageKey.refreshToken)
                 return nil
             }
 
@@ -114,8 +148,10 @@ public actor TokenManager {
 
             let tokens = try JSONDecoder().decode(RefreshResponse.self, from: data)
             accessToken = tokens.accessToken
+            try? storage.save(key: TokenStorageKey.accessToken, value: tokens.accessToken)
             if let newRefresh = tokens.refreshToken {
                 refreshToken = newRefresh
+                try? storage.save(key: TokenStorageKey.refreshToken, value: newRefresh)
             }
 
             onTokenRefresh?(TokenPair(accessToken: tokens.accessToken, refreshToken: tokens.refreshToken))

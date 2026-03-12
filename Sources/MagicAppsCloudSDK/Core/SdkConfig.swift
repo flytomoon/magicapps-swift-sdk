@@ -22,6 +22,10 @@ public struct SdkConfig {
     public var onTokenRefresh: ((TokenPair) -> Void)?
     /// Callback invoked when token refresh fails.
     public var onAuthError: ((SdkError) -> Void)?
+    /// Token storage backend. Defaults to ``KeychainTokenStorage`` for encrypted
+    /// persistence. Pass ``InMemoryTokenStorage`` to opt out, or provide a custom
+    /// ``TokenStorage`` implementation.
+    public var tokenStorage: TokenStorage
 
     public init(
         baseUrl: URL,
@@ -33,7 +37,8 @@ public struct SdkConfig {
         retryDelay: TimeInterval = 0.25,
         session: URLSession = .shared,
         onTokenRefresh: ((TokenPair) -> Void)? = nil,
-        onAuthError: ((SdkError) -> Void)? = nil
+        onAuthError: ((SdkError) -> Void)? = nil,
+        tokenStorage: TokenStorage? = nil
     ) {
         self.baseUrl = baseUrl
         self.appId = appId
@@ -45,6 +50,7 @@ public struct SdkConfig {
         self.session = session
         self.onTokenRefresh = onTokenRefresh
         self.onAuthError = onAuthError
+        self.tokenStorage = tokenStorage ?? KeychainTokenStorage()
     }
 }
 

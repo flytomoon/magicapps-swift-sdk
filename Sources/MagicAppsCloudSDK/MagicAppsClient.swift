@@ -125,8 +125,15 @@ public class MagicAppsClient {
         await http.tokenManager.setTokens(accessToken: accessToken, refreshToken: refreshToken, ownerToken: ownerToken)
     }
 
-    /// Clear all authentication tokens.
+    /// Clear all authentication tokens from memory and persistent storage.
+    /// Call this on user logout or token revocation to ensure tokens are
+    /// removed from the Keychain (or custom storage backend).
     public func clearTokens() async {
         await http.tokenManager.clearTokens()
+    }
+
+    /// Convenience alias for ``clearTokens()`` — clears all tokens on logout.
+    public func logout() async {
+        await clearTokens()
     }
 }
