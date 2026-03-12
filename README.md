@@ -1,4 +1,4 @@
-# MagicAppsSDK (Swift)
+# MagicAppsCloudSDK (Swift)
 
 Official Swift SDK for the MagicApps platform. Supports iOS, macOS, watchOS, and tvOS.
 
@@ -14,12 +14,12 @@ dependencies: [
 ]
 ```
 
-Then add `MagicAppsSDK` to your target's dependencies:
+Then add `MagicAppsCloudSDK` to your target's dependencies:
 
 ```swift
 .target(
     name: "YourApp",
-    dependencies: ["MagicAppsSDK"]
+    dependencies: ["MagicAppsCloudSDK"]
 )
 ```
 
@@ -28,7 +28,7 @@ Or in Xcode: **File > Add Package Dependencies** and enter the repository URL.
 ## Quick Start
 
 ```swift
-import MagicAppsSDK
+import MagicAppsCloudSDK
 
 let config = SdkConfig(
     baseUrl: URL(string: "https://api.yourplatform.com")!,

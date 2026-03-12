@@ -1,4 +1,4 @@
-# ``MagicAppsSDK``
+# ``MagicAppsCloudSDK``
 
 The official Magic Apps Cloud SDK for Swift — provides authentication, registry,
 payments, and platform service access for iOS, macOS, watchOS, and tvOS.

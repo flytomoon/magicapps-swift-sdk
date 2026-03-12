@@ -18,13 +18,11 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "MagicAppsCloudSDK",
-            path: "Sources/MagicAppsSDK"
+            name: "MagicAppsCloudSDK"
         ),
         .testTarget(
             name: "MagicAppsCloudSDKTests",
-            dependencies: ["MagicAppsCloudSDK"],
-            path: "Tests/MagicAppsSDKTests"
+            dependencies: ["MagicAppsCloudSDK"]
         ),
     ]
 )
