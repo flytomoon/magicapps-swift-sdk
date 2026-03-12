@@ -17,6 +17,8 @@ public struct SdkConfig {
     /// Base delay between retries in seconds (default: 0.25).
     public var retryDelay: TimeInterval
     /// Custom URLSession for requests (defaults to .shared).
+    /// When ``certificatePinning`` is configured, this is ignored in favor of a
+    /// pinning-enabled session created internally.
     public var session: URLSession
     /// Callback invoked when tokens are refreshed.
     public var onTokenRefresh: ((TokenPair) -> Void)?
@@ -26,6 +28,10 @@ public struct SdkConfig {
     /// persistence. Pass ``InMemoryTokenStorage`` to opt out, or provide a custom
     /// ``TokenStorage`` implementation.
     public var tokenStorage: TokenStorage
+    /// Certificate pinning configuration. When set, the SDK validates that the
+    /// server's TLS certificate matches one of the configured public key hashes.
+    /// Set ``CertificatePinningConfig/enabled`` to `false` for development.
+    public var certificatePinning: CertificatePinningConfig?
 
     public init(
         baseUrl: URL,
@@ -38,7 +44,8 @@ public struct SdkConfig {
         session: URLSession = .shared,
         onTokenRefresh: ((TokenPair) -> Void)? = nil,
         onAuthError: ((SdkError) -> Void)? = nil,
-        tokenStorage: TokenStorage? = nil
+        tokenStorage: TokenStorage? = nil,
+        certificatePinning: CertificatePinningConfig? = nil
     ) {
         self.baseUrl = baseUrl
         self.appId = appId
@@ -51,6 +58,7 @@ public struct SdkConfig {
         self.onTokenRefresh = onTokenRefresh
         self.onAuthError = onAuthError
         self.tokenStorage = tokenStorage ?? KeychainTokenStorage()
+        self.certificatePinning = certificatePinning
     }
 }
 

@@ -37,6 +37,10 @@ public enum SdkError: Error, CustomStringConvertible {
     case configError(String)
     /// Platform error - module not available on current platform.
     case platformError(moduleName: String, currentPlatform: String, supportedPlatforms: [String])
+    /// Certificate pinning failure - the server certificate did not match any pinned public key.
+    /// This indicates a potential man-in-the-middle attack or a certificate rotation that
+    /// requires updating the SDK's pin configuration. There is no silent fallback.
+    case certificatePinningFailure(host: String)
 
     public var description: String {
         switch self {
@@ -50,6 +54,10 @@ public enum SdkError: Error, CustomStringConvertible {
         case .configError(let msg): return "Config Error: \(msg)"
         case .platformError(let name, let current, let supported):
             return "Platform Error: \(name) not available on \(current). Supported: \(supported.joined(separator: ", "))"
+        case .certificatePinningFailure(let host):
+            return "Certificate Pinning Failure: The server certificate for \(host) did not match any pinned public key. " +
+                "This may indicate a man-in-the-middle attack or a certificate rotation. " +
+                "Update your CertificatePinningConfig pins or contact support."
         }
     }
 

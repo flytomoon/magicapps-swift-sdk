@@ -9,14 +9,29 @@ public class SdkHttpClient {
     private let session: URLSession
     private let defaultRetries: Int
     private let retryDelay: TimeInterval
+    /// Retained reference to the pinning delegate (URLSession holds a weak ref).
+    private let pinningDelegate: CertificatePinningDelegate?
 
     init(config: SdkConfig) {
         self.baseUrl = config.baseUrl
         self.appId = config.appId
-        self.session = config.session
         self.defaultRetries = config.retries
         self.retryDelay = config.retryDelay
         self.tokenManager = TokenManager(config: config)
+
+        // Create a pinning-enabled URLSession when certificate pinning is configured
+        if let pinningConfig = config.certificatePinning, pinningConfig.enabled {
+            let delegate = CertificatePinningDelegate(config: pinningConfig)
+            self.pinningDelegate = delegate
+            self.session = URLSession(
+                configuration: .default,
+                delegate: delegate,
+                delegateQueue: nil
+            )
+        } else {
+            self.pinningDelegate = nil
+            self.session = config.session
+        }
     }
 
     /// Make a GET request.
