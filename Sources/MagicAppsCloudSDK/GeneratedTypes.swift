@@ -2,7 +2,6 @@
 // GeneratedTypes.swift
 // Auto-generated API types from OpenAPI specification.
 // DO NOT EDIT MANUALLY - regenerate with: npm run openapi:generate-types
-//// Generated at: 2026-03-13T17:44:30.432Z
 //
 
 import Foundation
