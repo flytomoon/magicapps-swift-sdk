@@ -217,5 +217,4 @@ public class EndpointsService: ServiceModule {
     }
 }
 
-/// Empty body for POST requests that don't need a payload.
-private struct EmptyBody: Encodable {}
+// EmptyBody is defined in AuthService.swift
