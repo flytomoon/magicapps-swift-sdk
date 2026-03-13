@@ -2,10 +2,25 @@
 // GeneratedTypes.swift
 // Auto-generated API types from OpenAPI specification.
 // DO NOT EDIT MANUALLY - regenerate with: npm run openapi:generate-types
-//// Generated at: 2026-03-09T07:54:32.672Z
+//// Generated at: 2026-03-13T17:44:30.432Z
 //
 
 import Foundation
+
+/// Platform health check response with per-service status
+public struct PlatformHealthResponse: Codable, Sendable {
+    /// "Overall platform status: healthy (all pass), degraded (some non-critical fail), unhealthy (critical failures)"
+    public let status: String
+    /// ISO 8601 timestamp of when the check was performed
+    public let timestamp: String
+    /// Deployment environment identifier (dev, staging, prod)
+    public let environment: String
+    /// Per-service health check results
+    public let checks: [String: AnyCodable]
+    public let required: String?
+    /// Generic status message without secrets or internal details
+    public let properties: String?
+}
 
 public struct AuthTokenResponse: Codable, Sendable {
     public let user: [String: AnyCodable]?
