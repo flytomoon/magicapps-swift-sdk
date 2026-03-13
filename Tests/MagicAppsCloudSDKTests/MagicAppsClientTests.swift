@@ -109,4 +109,93 @@ final class MagicAppsClientTests: XCTestCase {
             XCTFail("Expected serverError for 500")
         }
     }
+
+    func testAiUsageRecordDecoding() throws {
+        let json = """
+        {
+            "usage_id": "u-abc-123",
+            "app_id": "test-app",
+            "provider_id": "openai",
+            "model_id": "gpt-4o-mini",
+            "request_type": "chat",
+            "input_tokens": 100,
+            "output_tokens": 50,
+            "total_tokens": 150,
+            "latency_ms": 420,
+            "status": "success",
+            "created_at": 1709251200000,
+            "expires_at": 1717027200,
+            "error_code": null,
+            "user_id": "user-42"
+        }
+        """.data(using: .utf8)!
+
+        let record = try JSONDecoder().decode(AiUsageRecord.self, from: json)
+        XCTAssertEqual(record.usageId, "u-abc-123")
+        XCTAssertEqual(record.appId, "test-app")
+        XCTAssertEqual(record.providerId, "openai")
+        XCTAssertEqual(record.modelId, "gpt-4o-mini")
+        XCTAssertEqual(record.requestType, "chat")
+        XCTAssertEqual(record.inputTokens, 100)
+        XCTAssertEqual(record.outputTokens, 50)
+        XCTAssertEqual(record.totalTokens, 150)
+        XCTAssertEqual(record.latencyMs, 420)
+        XCTAssertEqual(record.status, "success")
+        XCTAssertNil(record.errorCode)
+        XCTAssertEqual(record.userId, "user-42")
+    }
+
+    func testAiUsageRecordDecodingWithError() throws {
+        let json = """
+        {
+            "usage_id": "u-err-456",
+            "app_id": "test-app",
+            "provider_id": "anthropic",
+            "model_id": "claude-sonnet-4-20250514",
+            "request_type": "chat",
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "latency_ms": 120,
+            "status": "error",
+            "created_at": 1709251200000,
+            "expires_at": 1717027200,
+            "error_code": "rate_limited"
+        }
+        """.data(using: .utf8)!
+
+        let record = try JSONDecoder().decode(AiUsageRecord.self, from: json)
+        XCTAssertEqual(record.status, "error")
+        XCTAssertEqual(record.errorCode, "rate_limited")
+        XCTAssertNil(record.userId)
+    }
+
+    func testAiUsageResponseDecoding() throws {
+        let json = """
+        {
+            "usage": [
+                {
+                    "usage_id": "u-1",
+                    "app_id": "test-app",
+                    "provider_id": "openai",
+                    "model_id": "gpt-4o-mini",
+                    "request_type": "chat",
+                    "input_tokens": 100,
+                    "output_tokens": 50,
+                    "total_tokens": 150,
+                    "latency_ms": 420,
+                    "status": "success",
+                    "created_at": 1709251200000,
+                    "expires_at": 1717027200
+                }
+            ],
+            "count": 1
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(AiUsageResponse.self, from: json)
+        XCTAssertEqual(response.count, 1)
+        XCTAssertEqual(response.usage.count, 1)
+        XCTAssertEqual(response.usage[0].usageId, "u-1")
+    }
 }
