@@ -75,15 +75,12 @@ public struct AIProvider: Codable, Sendable {
     }
 }
 
-/// API error response body. Renamed from `Error` to avoid shadowing Swift.Error.
-public struct ApiErrorResponse: Codable, Sendable {
+public struct Error: Codable, Sendable {
     public let error: String
     public let message: String
 }
 
-/// Generated full-schema lookup table summary (DynamoDB shape).
-/// For the simpler SDK service type, see ``LookupTablesService/LookupTableSummary``.
-public struct GeneratedLookupTableSummary: Codable, Sendable {
+public struct LookupTableSummary: Codable, Sendable {
     public let lookupTableId: String?
     public let name: String?
     public let description: String?
@@ -111,8 +108,7 @@ public struct GeneratedLookupTableSummary: Codable, Sendable {
     }
 }
 
-/// Generated chunk reference type (DynamoDB shape).
-public struct GeneratedLookupTableChunk: Codable, Sendable {
+public struct LookupTableChunk: Codable, Sendable {
     public let index: Int?
     public let path: String?
     public let sha256: String?
@@ -126,8 +122,7 @@ public struct GeneratedLookupTableChunk: Codable, Sendable {
     }
 }
 
-/// Generated lookup table detail (DynamoDB shape).
-public struct GeneratedLookupTableDetail: Codable, Sendable {
+public struct LookupTableDetail: LookupTableSummary {
     /// Present on detail only; omitted from summary list.
     public let prompt: String?
     /// Optional templated success sentence using {{path.to.key}} tokens.
@@ -136,7 +131,7 @@ public struct GeneratedLookupTableDetail: Codable, Sendable {
     public let defaultFailSentence: String?
     public let chunkEncoding: String?
     public let manifestHash: String?
-    public let chunks: [GeneratedLookupTableChunk]?
+    public let chunks: [LookupTableChunk]?
 
     enum CodingKeys: String, CodingKey {
         case prompt
@@ -148,8 +143,7 @@ public struct GeneratedLookupTableDetail: Codable, Sendable {
     }
 }
 
-/// Generated admin lookup table detail (DynamoDB shape).
-public struct GeneratedAdminLookupTableDetail: Codable, Sendable {
+public struct AdminLookupTableDetail: LookupTableDetail {
     public let allowlistedApps: [String]?
     public let clientTargets: [String]?
     public let status: String?
@@ -203,9 +197,7 @@ public struct AdminLookupTableUpsertRequest: Codable, Sendable {
     }
 }
 
-/// Full catalog template record (DynamoDB shape). For the simpler API response
-/// type used by TemplatesService, see ``TemplatesService/Template``.
-public struct CatalogTemplate: Codable, Sendable {
+public struct Template: Codable, Sendable {
     public let pk: String?
     public let sk: String?
     public let templateId: String?
@@ -698,7 +690,7 @@ public struct TemplateParameter: Codable, Sendable {
     /// User-facing label when value_type is user_input.
     public let label: String?
     public let required: Bool?
-    public let defaultValue: String?
+    public let default: String?
     public let example: String?
     public let encoding: String?
 
@@ -708,7 +700,7 @@ public struct TemplateParameter: Codable, Sendable {
         case valueType = "value_type"
         case label
         case required
-        case defaultValue = "default"
+        case default
         case example
         case encoding
     }
@@ -748,9 +740,7 @@ public struct TemplateVisibility: Codable, Sendable {
     public let wellKnown: Bool?
 }
 
-/// Full catalog device record (DynamoDB shape). For the simpler API response
-/// type used by DevicesService, see ``DevicesService/Device``.
-public struct CatalogDevice: Codable, Sendable {
+public struct Device: Codable, Sendable {
     public let id: String?
     public let deviceName: String?
     public let displayName: String?
