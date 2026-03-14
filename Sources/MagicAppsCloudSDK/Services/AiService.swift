@@ -225,29 +225,39 @@ public struct ModerationResponse: Decodable {
 
 // MARK: - AI Usage Types
 
-/// AI usage summary response.
+/// Response wrapper from GET /apps/{app_id}/ai/usage/summary.
+/// Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 457-474)
+/// Response shape: { summaries: AiUsageSummaryRecord[] }
 public struct AiUsageSummary: Decodable {
-    public let totalRequests: Int?
-    public let totalTokens: Int?
-    public let totalCost: Double?
-    public let period: String?
-    public let breakdown: [AiUsageBreakdown]?
+    public let summaries: [AiUsageSummaryRecord]?
 
-    enum CodingKeys: String, CodingKey {
-        case totalRequests = "total_requests"
-        case totalTokens = "total_tokens"
-        case totalCost = "total_cost"
-        case period, breakdown
+    /// Convenience: get the total requests across all summary records.
+    public var totalRequests: Int? {
+        summaries?.reduce(0) { $0 + ($1.totalRequests ?? 0) }
     }
 }
 
-/// Breakdown of AI usage by model/endpoint.
-public struct AiUsageBreakdown: Decodable {
-    public let endpoint: String?
-    public let model: String?
-    public let requests: Int?
-    public let tokens: Int?
-    public let cost: Double?
+/// A single period summary record from the AI usage summary endpoint.
+/// Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 473)
+/// Fields from DynamoDB AI_USAGE_SUMMARY_TABLE.
+public struct AiUsageSummaryRecord: Decodable {
+    public let appId: String?
+    public let period: String?
+    public let totalRequests: Int?
+    public let totalInputTokens: Int?
+    public let totalOutputTokens: Int?
+    public let totalEstimatedCostUsd: Double?
+    public let updatedAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case appId = "app_id"
+        case period
+        case totalRequests = "total_requests"
+        case totalInputTokens = "total_input_tokens"
+        case totalOutputTokens = "total_output_tokens"
+        case totalEstimatedCostUsd = "total_estimated_cost_usd"
+        case updatedAt = "updated_at"
+    }
 }
 
 // MARK: - AI Detailed Usage Types

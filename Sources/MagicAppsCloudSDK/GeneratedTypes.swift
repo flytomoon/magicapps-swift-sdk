@@ -75,12 +75,19 @@ public struct AIProvider: Codable, Sendable {
     }
 }
 
-public struct Error: Codable, Sendable {
+/// API error response body returned by Lambda handlers.
+/// Renamed from `Error` to avoid shadowing Swift's built-in `Error` protocol.
+public struct ApiErrorBody: Codable, Sendable {
     public let error: String
     public let message: String
 }
 
-public struct LookupTableSummary: Codable, Sendable {
+// Note: LookupTableSummary, LookupTableDetail, and LookupTableChunkRef are defined
+// in LookupTablesService.swift to avoid duplicate type definitions.
+
+/// Admin-facing lookup table detail (includes admin-only fields).
+/// Source: lambda/lookup_tables/index.js toDetail (~line 883-901)
+public struct AdminLookupTableDetail: Decodable, Sendable {
     public let lookupTableId: String?
     public let name: String?
     public let description: String?
@@ -92,58 +99,12 @@ public struct LookupTableSummary: Codable, Sendable {
     public let storageMode: String?
     public let chunkCount: Int?
     public let updatedAt: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case lookupTableId = "lookup_table_id"
-        case name
-        case description
-        case schemaKeys = "schema_keys"
-        case schemaKeyCount = "schema_key_count"
-        case schemaKeysTruncated = "schema_keys_truncated"
-        case version
-        case payloadHash = "payload_hash"
-        case storageMode = "storage_mode"
-        case chunkCount = "chunk_count"
-        case updatedAt = "updated_at"
-    }
-}
-
-public struct LookupTableChunk: Codable, Sendable {
-    public let index: Int?
-    public let path: String?
-    public let sha256: String?
-    public let byteLength: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case index
-        case path
-        case sha256
-        case byteLength = "byte_length"
-    }
-}
-
-public struct LookupTableDetail: LookupTableSummary {
-    /// Present on detail only; omitted from summary list.
     public let prompt: String?
-    /// Optional templated success sentence using {{path.to.key}} tokens.
     public let defaultSuccessSentence: String?
-    /// Optional fallback fail sentence.
     public let defaultFailSentence: String?
     public let chunkEncoding: String?
     public let manifestHash: String?
-    public let chunks: [LookupTableChunk]?
-
-    enum CodingKeys: String, CodingKey {
-        case prompt
-        case defaultSuccessSentence = "default_success_sentence"
-        case defaultFailSentence = "default_fail_sentence"
-        case chunkEncoding = "chunk_encoding"
-        case manifestHash = "manifest_hash"
-        case chunks
-    }
-}
-
-public struct AdminLookupTableDetail: LookupTableDetail {
+    public let chunks: [LookupTableChunkRef]?
     public let allowlistedApps: [String]?
     public let clientTargets: [String]?
     public let status: String?
@@ -155,6 +116,22 @@ public struct AdminLookupTableDetail: LookupTableDetail {
     public let manifestKey: String?
 
     enum CodingKeys: String, CodingKey {
+        case lookupTableId = "lookup_table_id"
+        case name, description
+        case schemaKeys = "schema_keys"
+        case schemaKeyCount = "schema_key_count"
+        case schemaKeysTruncated = "schema_keys_truncated"
+        case version
+        case payloadHash = "payload_hash"
+        case storageMode = "storage_mode"
+        case chunkCount = "chunk_count"
+        case updatedAt = "updated_at"
+        case prompt
+        case defaultSuccessSentence = "default_success_sentence"
+        case defaultFailSentence = "default_fail_sentence"
+        case chunkEncoding = "chunk_encoding"
+        case manifestHash = "manifest_hash"
+        case chunks
         case allowlistedApps = "allowlisted_apps"
         case clientTargets = "client_targets"
         case status
@@ -197,121 +174,8 @@ public struct AdminLookupTableUpsertRequest: Codable, Sendable {
     }
 }
 
-public struct Template: Codable, Sendable {
-    public let pk: String?
-    public let sk: String?
-    public let templateId: String?
-    public let integrationId: String?
-    public let appId: String?
-    public let templateName: String?
-    public let templateType: String?
-    /// High-level grouping (e.g., custom_core, built_integration)
-    public let group: String?
-    /// End-user facing description shown publicly
-    public let publicDescription: String?
-    /// How the endpoint is supplied (e.g., full_url, id_only)
-    public let endpointInputMode: String?
-    /// Placeholder text for id_only inputs
-    public let endpointInputPlaceholder: String?
-    /// Whether the client should show the endpoint input field
-    public let showEndpointInput: Bool?
-    /// Whether the client should display parameter fields
-    public let showParameters: Bool?
-    public let integrationName: String?
-    public let provider: String?
-    public let description: String?
-    public let category: String?
-    public let tags: [String]?
-    public let status: String?
-    public let version: String?
-    public let isLatest: Bool?
-    public let lastVerifiedAt: String?
-    public let maintainer: String?
-    public let createdByName: String?
-    public let websiteUrl: String?
-    public let docsUrl: String?
-    public let supportUrl: String?
-    public let appStoreUrls: [String: AnyCodable]?
-    public let apple: String?
-    public let google: String?
-    public let iconUrl: String?
-    public let priceTier: String?
-    public let currentPrice: String?
-    public let authType: String?
-    public let authLocation: String?
-    public let scopes: [String]?
-    public let requiresSignature: Bool?
-    public let contentType: String?
-    public let submittedByName: String?
-    public let submittedByEmail: String?
-    public let submittedAt: String?
-    public let breakingChanges: String?
-    public let supersedesVersion: String?
-    public let approvedAt: String?
-    public let isNewUntil: String?
-    public let visibility: TemplateVisibility?
-    public let allowedAppIds: [String]?
-    public let endpointPattern: String?
-    public let parameters: [TemplateParameter]?
-    public let metadata: [String: AnyCodable]?
-    public let createdAt: Double?
-    public let updatedAt: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case pk
-        case sk
-        case templateId = "template_id"
-        case integrationId = "integration_id"
-        case appId = "app_id"
-        case templateName = "template_name"
-        case templateType = "template_type"
-        case group
-        case publicDescription = "public_description"
-        case endpointInputMode = "endpoint_input_mode"
-        case endpointInputPlaceholder = "endpoint_input_placeholder"
-        case showEndpointInput = "show_endpoint_input"
-        case showParameters = "show_parameters"
-        case integrationName = "integration_name"
-        case provider
-        case description
-        case category
-        case tags
-        case status
-        case version
-        case isLatest = "is_latest"
-        case lastVerifiedAt = "last_verified_at"
-        case maintainer
-        case createdByName = "created_by_name"
-        case websiteUrl = "website_url"
-        case docsUrl = "docs_url"
-        case supportUrl = "support_url"
-        case appStoreUrls = "app_store_urls"
-        case apple
-        case google
-        case iconUrl = "icon_url"
-        case priceTier = "price_tier"
-        case currentPrice = "current_price"
-        case authType = "auth_type"
-        case authLocation = "auth_location"
-        case scopes
-        case requiresSignature = "requires_signature"
-        case contentType = "content_type"
-        case submittedByName = "submitted_by_name"
-        case submittedByEmail = "submitted_by_email"
-        case submittedAt = "submitted_at"
-        case breakingChanges = "breaking_changes"
-        case supersedesVersion = "supersedes_version"
-        case approvedAt = "approved_at"
-        case isNewUntil = "is_new_until"
-        case visibility
-        case allowedAppIds = "allowed_app_ids"
-        case endpointPattern = "endpoint_pattern"
-        case parameters
-        case metadata
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-    }
-}
+// Note: Template is defined in TemplatesService.swift to avoid duplicate type definitions.
+// The generated admin-level template fields are available through the Submission types below.
 
 public struct AppIntegration: Codable, Sendable {
     public let integrationId: String?
@@ -690,7 +554,7 @@ public struct TemplateParameter: Codable, Sendable {
     /// User-facing label when value_type is user_input.
     public let label: String?
     public let required: Bool?
-    public let default: String?
+    public let `default`: String?
     public let example: String?
     public let encoding: String?
 
@@ -700,7 +564,7 @@ public struct TemplateParameter: Codable, Sendable {
         case valueType = "value_type"
         case label
         case required
-        case default
+        case `default`
         case example
         case encoding
     }
@@ -740,47 +604,7 @@ public struct TemplateVisibility: Codable, Sendable {
     public let wellKnown: Bool?
 }
 
-public struct Device: Codable, Sendable {
-    public let id: String?
-    public let deviceName: String?
-    public let displayName: String?
-    public let deviceType: String?
-    public let description: String?
-    public let category: String?
-    public let tags: [String]?
-    public let visibility: String?
-    public let bluetoothUuid: String?
-    public let status: String?
-    public let version: String?
-    public let isLatest: Bool?
-    public let manufacturer: String?
-    public let model: String?
-    public let allowedAppIds: [String]?
-    public let metadata: [String: AnyCodable]?
-    public let createdAt: Double?
-    public let updatedAt: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case deviceName = "device_name"
-        case displayName = "display_name"
-        case deviceType = "device_type"
-        case description
-        case category
-        case tags
-        case visibility
-        case bluetoothUuid = "bluetooth_uuid"
-        case status
-        case version
-        case isLatest = "is_latest"
-        case manufacturer
-        case model
-        case allowedAppIds = "allowed_app_ids"
-        case metadata
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-    }
-}
+// Note: Device is defined in DevicesService.swift to avoid duplicate type definitions.
 
 public struct DeviceInput: Codable, Sendable {
     public let deviceName: String
