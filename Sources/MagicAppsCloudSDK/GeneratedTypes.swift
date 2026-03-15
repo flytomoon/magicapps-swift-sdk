@@ -122,7 +122,18 @@ public struct LookupTableChunk: Codable, Sendable {
     }
 }
 
-public struct LookupTableDetail: LookupTableSummary {
+public struct LookupTableDetail: Codable, Sendable {
+    public let lookupTableId: String?
+    public let name: String?
+    public let description: String?
+    public let schemaKeys: [String]?
+    public let schemaKeyCount: Int?
+    public let schemaKeysTruncated: Bool?
+    public let version: Int?
+    public let payloadHash: String?
+    public let storageMode: String?
+    public let chunkCount: Int?
+    public let updatedAt: Int?
     /// Present on detail only; omitted from summary list.
     public let prompt: String?
     /// Optional templated success sentence using {{path.to.key}} tokens.
@@ -134,6 +145,17 @@ public struct LookupTableDetail: LookupTableSummary {
     public let chunks: [LookupTableChunk]?
 
     enum CodingKeys: String, CodingKey {
+        case lookupTableId = "lookup_table_id"
+        case name
+        case description
+        case schemaKeys = "schema_keys"
+        case schemaKeyCount = "schema_key_count"
+        case schemaKeysTruncated = "schema_keys_truncated"
+        case version
+        case payloadHash = "payload_hash"
+        case storageMode = "storage_mode"
+        case chunkCount = "chunk_count"
+        case updatedAt = "updated_at"
         case prompt
         case defaultSuccessSentence = "default_success_sentence"
         case defaultFailSentence = "default_fail_sentence"
@@ -143,7 +165,27 @@ public struct LookupTableDetail: LookupTableSummary {
     }
 }
 
-public struct AdminLookupTableDetail: LookupTableDetail {
+public struct AdminLookupTableDetail: Codable, Sendable {
+    public let lookupTableId: String?
+    public let name: String?
+    public let description: String?
+    public let schemaKeys: [String]?
+    public let schemaKeyCount: Int?
+    public let schemaKeysTruncated: Bool?
+    public let version: Int?
+    public let payloadHash: String?
+    public let storageMode: String?
+    public let chunkCount: Int?
+    public let updatedAt: Int?
+    /// Present on detail only; omitted from summary list.
+    public let prompt: String?
+    /// Optional templated success sentence using {{path.to.key}} tokens.
+    public let defaultSuccessSentence: String?
+    /// Optional fallback fail sentence.
+    public let defaultFailSentence: String?
+    public let chunkEncoding: String?
+    public let manifestHash: String?
+    public let chunks: [LookupTableChunk]?
     public let allowlistedApps: [String]?
     public let clientTargets: [String]?
     public let status: String?
@@ -155,6 +197,23 @@ public struct AdminLookupTableDetail: LookupTableDetail {
     public let manifestKey: String?
 
     enum CodingKeys: String, CodingKey {
+        case lookupTableId = "lookup_table_id"
+        case name
+        case description
+        case schemaKeys = "schema_keys"
+        case schemaKeyCount = "schema_key_count"
+        case schemaKeysTruncated = "schema_keys_truncated"
+        case version
+        case payloadHash = "payload_hash"
+        case storageMode = "storage_mode"
+        case chunkCount = "chunk_count"
+        case updatedAt = "updated_at"
+        case prompt
+        case defaultSuccessSentence = "default_success_sentence"
+        case defaultFailSentence = "default_fail_sentence"
+        case chunkEncoding = "chunk_encoding"
+        case manifestHash = "manifest_hash"
+        case chunks
         case allowlistedApps = "allowlisted_apps"
         case clientTargets = "client_targets"
         case status
