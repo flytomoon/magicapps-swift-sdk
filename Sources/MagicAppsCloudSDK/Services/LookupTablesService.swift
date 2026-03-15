@@ -2,90 +2,12 @@ import Foundation
 
 // MARK: - Lookup Table Types
 
-/// Summary of a lookup table (returned in list responses).
-public struct LookupTableSummary: Decodable {
-    public let lookupTableId: String
-    public let name: String
-    public let description: String?
-    public let schemaKeys: [String]
-    public let schemaKeyCount: Int
-    public let schemaKeysTruncated: Bool
-    public let version: Int
-    public let payloadHash: String
-    public let storageMode: String
-    public let chunkCount: Int
-    public let updatedAt: Int
-
-    enum CodingKeys: String, CodingKey {
-        case lookupTableId = "lookup_table_id"
-        case name, description
-        case schemaKeys = "schema_keys"
-        case schemaKeyCount = "schema_key_count"
-        case schemaKeysTruncated = "schema_keys_truncated"
-        case version
-        case payloadHash = "payload_hash"
-        case storageMode = "storage_mode"
-        case chunkCount = "chunk_count"
-        case updatedAt = "updated_at"
-    }
-}
+// LookupTableSummary, LookupTableChunk, and LookupTableDetail types
+// are defined in GeneratedTypes.swift
 
 /// Response from listing lookup tables.
 public struct LookupTableListResponse: Decodable {
     public let items: [LookupTableSummary]
-}
-
-/// A reference to an individual data chunk in a lookup table.
-public struct LookupTableChunkRef: Decodable, Sendable {
-    public let index: Int
-    public let path: String
-    public let sha256: String
-    public let byteLength: Int
-
-    enum CodingKeys: String, CodingKey {
-        case index, path, sha256
-        case byteLength = "byte_length"
-    }
-}
-
-/// Detailed lookup table metadata including chunk references.
-public struct LookupTableDetail: Decodable {
-    public let lookupTableId: String
-    public let name: String
-    public let description: String?
-    public let schemaKeys: [String]
-    public let schemaKeyCount: Int
-    public let schemaKeysTruncated: Bool
-    public let version: Int
-    public let payloadHash: String
-    public let storageMode: String
-    public let chunkCount: Int
-    public let updatedAt: Int
-    public let prompt: String?
-    public let defaultSuccessSentence: String?
-    public let defaultFailSentence: String?
-    public let chunkEncoding: String
-    public let manifestHash: String
-    public let chunks: [LookupTableChunkRef]
-
-    enum CodingKeys: String, CodingKey {
-        case lookupTableId = "lookup_table_id"
-        case name, description
-        case schemaKeys = "schema_keys"
-        case schemaKeyCount = "schema_key_count"
-        case schemaKeysTruncated = "schema_keys_truncated"
-        case version
-        case payloadHash = "payload_hash"
-        case storageMode = "storage_mode"
-        case chunkCount = "chunk_count"
-        case updatedAt = "updated_at"
-        case prompt
-        case defaultSuccessSentence = "default_success_sentence"
-        case defaultFailSentence = "default_fail_sentence"
-        case chunkEncoding = "chunk_encoding"
-        case manifestHash = "manifest_hash"
-        case chunks
-    }
 }
 
 // MARK: - Lookup Tables Service
@@ -142,7 +64,8 @@ public class LookupTablesService: ServiceModule {
         let detail = try await get(lookupTableId: lookupTableId)
         var result: [String: AnyCodable] = [:]
 
-        for i in 0..<detail.chunkCount {
+        let count = detail.chunkCount ?? 0
+        for i in 0..<count {
             let chunk = try await getChunk(lookupTableId: lookupTableId, chunkIndex: i, version: detail.version)
             for (key, value) in chunk {
                 result[key] = value

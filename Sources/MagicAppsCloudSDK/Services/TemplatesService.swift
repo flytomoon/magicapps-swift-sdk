@@ -2,42 +2,7 @@ import Foundation
 
 // MARK: - Template Types
 
-/// A template within an application.
-public struct Template: Codable, Sendable {
-    public let templateId: String?
-    public let appId: String?
-    public let name: String
-    public let description: String?
-    public let content: [String: AnyCodable]?
-    public let createdAt: String?
-    public let updatedAt: String?
-
-    enum CodingKeys: String, CodingKey {
-        case templateId = "template_id"
-        case appId = "app_id"
-        case name, description, content
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-    }
-
-    public init(
-        templateId: String? = nil,
-        appId: String? = nil,
-        name: String,
-        description: String? = nil,
-        content: [String: AnyCodable]? = nil,
-        createdAt: String? = nil,
-        updatedAt: String? = nil
-    ) {
-        self.templateId = templateId
-        self.appId = appId
-        self.name = name
-        self.description = description
-        self.content = content
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-    }
-}
+// Template type is defined in GeneratedTypes.swift
 
 /// A simple type-erased codable wrapper for template content.
 /// Uses @unchecked Sendable because the underlying `Any` value is immutable after init —

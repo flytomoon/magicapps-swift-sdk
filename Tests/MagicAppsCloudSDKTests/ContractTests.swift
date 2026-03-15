@@ -600,7 +600,7 @@ struct ContractTests {
         let detail = try await client.lookupTables.get(lookupTableId: "lt-1")
         #expect(detail.lookupTableId == "lt-1")
         #expect(detail.name == "Colors")
-        #expect(detail.chunks.count == 1)
+        #expect((detail.chunks?.count ?? 0) == 1)
         #expect(lastCapturedMethod() == "GET")
         #expect(lastCapturedPath()!.hasSuffix("/lookup-tables/lt-1"))
         #expect(routeExists(method: "GET", path: "/lookup-tables/lt-1"))
@@ -764,7 +764,7 @@ struct ContractTests {
         """.data(using: .utf8)!
         let summary = try JSONDecoder().decode(LookupTableSummary.self, from: json)
         #expect(summary.lookupTableId == "lt-1")
-        #expect(summary.schemaKeys.count == 2)
+        #expect(summary.schemaKeys?.count == 2)
     }
 
     @Test func chatCompletionResponseDecodesFromRealShape() throws {

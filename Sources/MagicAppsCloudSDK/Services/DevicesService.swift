@@ -2,28 +2,7 @@ import Foundation
 
 // MARK: - Device Types
 
-/// A device in the device catalog.
-public struct Device: Decodable, Sendable {
-    public let deviceId: String?
-    public let deviceName: String
-    public let displayName: String?
-    public let deviceType: String?
-    public let bluetoothUuid: String?
-    public let tags: [String]?
-    public let visibility: String?
-    public let source: String?
-    public let category: String?
-    public let specs: [String: AnyCodable]?
-
-    enum CodingKeys: String, CodingKey {
-        case deviceId = "device_id"
-        case deviceName = "device_name"
-        case displayName = "display_name"
-        case deviceType = "device_type"
-        case bluetoothUuid = "bluetooth_uuid"
-        case tags, visibility, source, category, specs
-    }
-}
+// Device type is defined in GeneratedTypes.swift
 
 /// Response from the device catalog endpoint.
 public struct DeviceCatalogResponse: Decodable {
