@@ -720,7 +720,7 @@ public struct TemplateParameter: Codable, Sendable {
     /// User-facing label when value_type is user_input.
     public let label: String?
     public let required: Bool?
-    public let default: String?
+    public let defaultValue: String?
     public let example: String?
     public let encoding: String?
 
@@ -730,7 +730,7 @@ public struct TemplateParameter: Codable, Sendable {
         case valueType = "value_type"
         case label
         case required
-        case default
+        case defaultValue = "default"
         case example
         case encoding
     }
