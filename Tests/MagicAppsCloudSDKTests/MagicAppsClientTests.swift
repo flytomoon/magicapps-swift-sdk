@@ -1,20 +1,22 @@
-import XCTest
+import Testing
+import Foundation
 @testable import MagicAppsCloudSDK
 
-final class MagicAppsClientTests: XCTestCase {
+@Suite
+struct MagicAppsClientTests {
 
-    func testSdkConfigInitialization() {
+    @Test func sdkConfigInitialization() {
         let config = SdkConfig(
             baseUrl: URL(string: "https://api.example.com")!,
             appId: "test-app"
         )
-        XCTAssertEqual(config.appId, "test-app")
-        XCTAssertEqual(config.baseUrl.absoluteString, "https://api.example.com")
-        XCTAssertNil(config.accessToken)
-        XCTAssertEqual(config.retries, 2)
+        #expect(config.appId == "test-app")
+        #expect(config.baseUrl.absoluteString == "https://api.example.com")
+        #expect(config.accessToken == nil)
+        #expect(config.retries == 2)
     }
 
-    func testSdkConfigWithTokens() {
+    @Test func sdkConfigWithTokens() {
         let config = SdkConfig(
             baseUrl: URL(string: "https://api.example.com")!,
             appId: "test-app",
@@ -23,22 +25,22 @@ final class MagicAppsClientTests: XCTestCase {
             retries: 5,
             retryDelay: 1.0
         )
-        XCTAssertEqual(config.accessToken, "my-token")
-        XCTAssertEqual(config.refreshToken, "my-refresh")
-        XCTAssertEqual(config.retries, 5)
-        XCTAssertEqual(config.retryDelay, 1.0)
+        #expect(config.accessToken == "my-token")
+        #expect(config.refreshToken == "my-refresh")
+        #expect(config.retries == 5)
+        #expect(config.retryDelay == 1.0)
     }
 
-    func testClientInitialization() {
+    @Test func clientInitialization() {
         let config = SdkConfig(
             baseUrl: URL(string: "https://api.example.com")!,
             appId: "test-app"
         )
         let client = MagicAppsClient(config: config)
-        XCTAssertNotNil(client)
+        #expect(client != nil)
     }
 
-    func testAppInfoDecoding() throws {
+    @Test func appInfoDecoding() throws {
         let json = """
         {
             "app_id": "test-app",
@@ -51,13 +53,13 @@ final class MagicAppsClientTests: XCTestCase {
         """.data(using: .utf8)!
 
         let appInfo = try JSONDecoder().decode(AppInfo.self, from: json)
-        XCTAssertEqual(appInfo.appId, "test-app")
-        XCTAssertEqual(appInfo.name, "Test App")
-        XCTAssertEqual(appInfo.slug, "test-app")
-        XCTAssertEqual(appInfo.description, "A test application")
+        #expect(appInfo.appId == "test-app")
+        #expect(appInfo.name == "Test App")
+        #expect(appInfo.slug == "test-app")
+        #expect(appInfo.description == "A test application")
     }
 
-    func testTemplateDecoding() throws {
+    @Test func templateDecoding() throws {
         let json = """
         {
             "template_id": "tmpl-1",
@@ -70,47 +72,47 @@ final class MagicAppsClientTests: XCTestCase {
         """.data(using: .utf8)!
 
         let template = try JSONDecoder().decode(Template.self, from: json)
-        XCTAssertEqual(template.templateId, "tmpl-1")
-        XCTAssertEqual(template.appId, "test-app")
-        XCTAssertEqual(template.name, "Test Template")
-        XCTAssertNil(template.description)
+        #expect(template.templateId == "tmpl-1")
+        #expect(template.appId == "test-app")
+        #expect(template.name == "Test Template")
+        #expect(template.description == nil)
     }
 
-    func testSdkErrorDescriptions() {
+    @Test func sdkErrorDescriptions() {
         let configError = SdkError.configError("missing appId")
-        XCTAssertTrue(configError.description.contains("Config Error"))
+        #expect(configError.description.contains("Config Error"))
 
         let apiError = SdkError.apiError(404, "Not Found", nil)
-        XCTAssertTrue(apiError.description.contains("404"))
+        #expect(apiError.description.contains("404"))
 
         let networkError = SdkError.networkError("timeout", nil)
-        XCTAssertTrue(networkError.description.contains("Network Error"))
+        #expect(networkError.description.contains("Network Error"))
     }
 
-    func testSdkErrorFromStatus() {
+    @Test func sdkErrorFromStatus() {
         let error401 = SdkError.from(status: 401, payload: nil)
         if case .unauthorized = error401 {
             // Expected
         } else {
-            XCTFail("Expected unauthorized error for 401")
+            Issue.record("Expected unauthorized error for 401")
         }
 
         let error404 = SdkError.from(status: 404, payload: nil)
         if case .notFound = error404 {
             // Expected
         } else {
-            XCTFail("Expected notFound error for 404")
+            Issue.record("Expected notFound error for 404")
         }
 
         let error500 = SdkError.from(status: 500, payload: nil)
         if case .serverError = error500 {
             // Expected
         } else {
-            XCTFail("Expected serverError for 500")
+            Issue.record("Expected serverError for 500")
         }
     }
 
-    func testAiUsageRecordDecoding() throws {
+    @Test func aiUsageRecordDecoding() throws {
         let json = """
         {
             "usage_id": "u-abc-123",
@@ -131,21 +133,21 @@ final class MagicAppsClientTests: XCTestCase {
         """.data(using: .utf8)!
 
         let record = try JSONDecoder().decode(AiUsageRecord.self, from: json)
-        XCTAssertEqual(record.usageId, "u-abc-123")
-        XCTAssertEqual(record.appId, "test-app")
-        XCTAssertEqual(record.providerId, "openai")
-        XCTAssertEqual(record.modelId, "gpt-4o-mini")
-        XCTAssertEqual(record.requestType, "chat")
-        XCTAssertEqual(record.inputTokens, 100)
-        XCTAssertEqual(record.outputTokens, 50)
-        XCTAssertEqual(record.totalTokens, 150)
-        XCTAssertEqual(record.latencyMs, 420)
-        XCTAssertEqual(record.status, "success")
-        XCTAssertNil(record.errorCode)
-        XCTAssertEqual(record.userId, "user-42")
+        #expect(record.usageId == "u-abc-123")
+        #expect(record.appId == "test-app")
+        #expect(record.providerId == "openai")
+        #expect(record.modelId == "gpt-4o-mini")
+        #expect(record.requestType == "chat")
+        #expect(record.inputTokens == 100)
+        #expect(record.outputTokens == 50)
+        #expect(record.totalTokens == 150)
+        #expect(record.latencyMs == 420)
+        #expect(record.status == "success")
+        #expect(record.errorCode == nil)
+        #expect(record.userId == "user-42")
     }
 
-    func testAiUsageRecordDecodingWithError() throws {
+    @Test func aiUsageRecordDecodingWithError() throws {
         let json = """
         {
             "usage_id": "u-err-456",
@@ -165,12 +167,12 @@ final class MagicAppsClientTests: XCTestCase {
         """.data(using: .utf8)!
 
         let record = try JSONDecoder().decode(AiUsageRecord.self, from: json)
-        XCTAssertEqual(record.status, "error")
-        XCTAssertEqual(record.errorCode, "rate_limited")
-        XCTAssertNil(record.userId)
+        #expect(record.status == "error")
+        #expect(record.errorCode == "rate_limited")
+        #expect(record.userId == nil)
     }
 
-    func testAiUsageResponseDecoding() throws {
+    @Test func aiUsageResponseDecoding() throws {
         let json = """
         {
             "usage": [
@@ -194,8 +196,8 @@ final class MagicAppsClientTests: XCTestCase {
         """.data(using: .utf8)!
 
         let response = try JSONDecoder().decode(AiUsageResponse.self, from: json)
-        XCTAssertEqual(response.count, 1)
-        XCTAssertEqual(response.usage.count, 1)
-        XCTAssertEqual(response.usage[0].usageId, "u-1")
+        #expect(response.count == 1)
+        #expect(response.usage.count == 1)
+        #expect(response.usage[0].usageId == "u-1")
     }
 }

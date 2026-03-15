@@ -1,10 +1,11 @@
-import XCTest
+import Testing
+import Foundation
 @testable import MagicAppsCloudSDK
 
 // MARK: - Mock URLProtocol for intercepting requests
 
 /// Records every outgoing request and returns a configurable JSON response.
-final class MockURLProtocol: URLProtocol {
+final class MockURLProtocol: URLProtocol, @unchecked Sendable {
     /// Store captured requests for assertions.
     nonisolated(unsafe) static var capturedRequests: [URLRequest] = []
     /// The JSON data to return for every request.
@@ -282,79 +283,79 @@ let FIXTURE_APP_INFO = """
 
 // MARK: - Contract Tests
 
-final class ContractTests: XCTestCase {
+@Suite(.serialized)
+struct ContractTests {
 
-    override func setUp() {
-        super.setUp()
+    init() {
         MockURLProtocol.reset()
     }
 
     // MARK: - MagicAppsClient root methods
 
-    func testPing() async throws {
+    @Test func ping() async throws {
         // Source: lambda/templates/index.js ok() (~line 1028) - { message, requestId }
         MockURLProtocol.responseData = FIXTURE_PING.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.ping()
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/ping"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/ping"))
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/ping"))
+        #expect(routeExists(method: "GET", path: "/ping"))
     }
 
-    func testGetAppInfo() async throws {
+    @Test func getAppInfo() async throws {
         // Source: lambda/templates/index.js handleGetAppInfo via ok() (~line 1028)
         MockURLProtocol.responseData = FIXTURE_APP_INFO.data(using: .utf8)!
 
         let client = makeClient()
         let info = try await client.getAppInfo()
-        XCTAssertEqual(info.appId, "test-app")
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/apps/test-app"))
+        #expect(info.appId == "test-app")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app"))
     }
 
     // MARK: - Templates Service
 
-    func testTemplatesList() async throws {
+    @Test func templatesList() async throws {
         // Source: lambda/templates/index.js handleList (~line 860) - returns { items: Template[] }
         MockURLProtocol.responseData = FIXTURE_TEMPLATES_LIST.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.templates.list()
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/templates"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/apps/test-app/templates"))
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/templates"))
     }
 
-    func testTemplatesGet() async throws {
+    @Test func templatesGet() async throws {
         // Source: lambda/templates/index.js handleGet (~line 880) - returns single template
         MockURLProtocol.responseData = FIXTURE_TEMPLATE.data(using: .utf8)!
 
         let client = makeClient()
         let tmpl = try await client.templates.get(templateId: "tmpl-1")
-        XCTAssertEqual(tmpl.templateId, "tmpl-1")
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/apps/test-app/templates/tmpl-1"))
+        #expect(tmpl.templateId == "tmpl-1")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/templates/tmpl-1"))
     }
 
-    func testTemplatesCreate() async throws {
+    @Test func templatesCreate() async throws {
         // Source: lambda/templates/index.js handleCreate (~line 963)
         MockURLProtocol.responseData = FIXTURE_TEMPLATE_CREATED.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.templates.create(name: "New")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/templates"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/templates"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/templates"))
 
         let body = lastCapturedBody()
-        XCTAssertNotNil(body?["name"])
-        XCTAssertEqual(body?["name"] as? String, "New")
+        #expect(body?["name"] != nil)
+        #expect(body?["name"] as? String == "New")
     }
 
-    func testTemplatesUpdate() async throws {
+    @Test func templatesUpdate() async throws {
         // Source: lambda/templates/index.js handleUpdate - returns updated template
         MockURLProtocol.responseData = """
         {"template_id":"tmpl-1","app_id":"test-app","name":"Updated","slug":"updated","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-06-01T00:00:00Z"}
@@ -363,34 +364,34 @@ final class ContractTests: XCTestCase {
         let client = makeClient()
         let req = UpdateTemplateRequest(name: "Updated")
         _ = try await client.templates.update(templateId: "tmpl-1", req)
-        XCTAssertEqual(lastCapturedMethod(), "PUT")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
-        XCTAssertTrue(routeExists(method: "PUT", path: "/apps/test-app/templates/tmpl-1"))
+        #expect(lastCapturedMethod() == "PUT")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
+        #expect(routeExists(method: "PUT", path: "/apps/test-app/templates/tmpl-1"))
     }
 
-    func testTemplatesDelete() async throws {
+    @Test func templatesDelete() async throws {
         let client = makeClient()
         try await client.templates.delete(templateId: "tmpl-1")
-        XCTAssertEqual(lastCapturedMethod(), "DELETE")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
-        XCTAssertTrue(routeExists(method: "DELETE", path: "/apps/test-app/templates/tmpl-1"))
+        #expect(lastCapturedMethod() == "DELETE")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
+        #expect(routeExists(method: "DELETE", path: "/apps/test-app/templates/tmpl-1"))
     }
 
-    func testBrowseRegistry() async throws {
+    @Test func browseRegistry() async throws {
         // Source: lambda/templates/index.js handleRegistryApps (~line 515-518)
         // Returns { items: CardApp[] } via toCardApp (~line 571-591)
         MockURLProtocol.responseData = FIXTURE_REGISTRY_APPS.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.templates.browseRegistry()
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/registry/apps"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/registry/apps"))
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/registry/apps"))
+        #expect(routeExists(method: "GET", path: "/registry/apps"))
     }
 
     // MARK: - AI Service
 
-    func testCreateChatCompletion() async throws {
+    @Test func createChatCompletion() async throws {
         // Source: lambda/ai_proxy/index.js normalizeProviderResponse (~line 830-874)
         // All AI responses normalized to { id, provider, model, choices, usage }
         MockURLProtocol.responseData = FIXTURE_CHAT_COMPLETION.data(using: .utf8)!
@@ -398,304 +399,304 @@ final class ContractTests: XCTestCase {
         let client = makeClient()
         let req = ChatCompletionRequest(messages: [ChatMessage(role: "user", content: "hello")])
         let response = try await client.ai.createChatCompletion(req)
-        XCTAssertEqual(response.choices.count, 1)
-        XCTAssertEqual(response.choices[0].message.content, "Hello!")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/chat/completions"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/ai/chat/completions"))
+        #expect(response.choices.count == 1)
+        #expect(response.choices[0].message.content == "Hello!")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/chat/completions"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/ai/chat/completions"))
 
         let body = lastCapturedBody()
-        XCTAssertNotNil(body?["messages"])
+        #expect(body?["messages"] != nil)
     }
 
-    func testCreateEmbedding() async throws {
+    @Test func createEmbedding() async throws {
         // Source: lambda/ai_proxy/index.js normalizeProviderResponse (~line 830-874)
         MockURLProtocol.responseData = FIXTURE_EMBEDDING.data(using: .utf8)!
 
         let client = makeClient()
         let req = EmbeddingRequest(input: "test")
         let response = try await client.ai.createEmbedding(req)
-        XCTAssertEqual(response.data.count, 1)
-        XCTAssertEqual(response.data[0].embedding, [0.1, 0.2, 0.3])
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/embeddings"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/ai/embeddings"))
+        #expect(response.data.count == 1)
+        #expect(response.data[0].embedding == [0.1, 0.2, 0.3])
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/embeddings"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/ai/embeddings"))
 
         let body = lastCapturedBody()
-        XCTAssertEqual(body?["input"] as? String, "test")
+        #expect(body?["input"] as? String == "test")
     }
 
-    func testCreateImage() async throws {
+    @Test func createImage() async throws {
         // Source: lambda/ai_proxy/index.js normalizeProviderResponse (~line 830-874)
         MockURLProtocol.responseData = FIXTURE_IMAGE_GENERATION.data(using: .utf8)!
 
         let client = makeClient()
         let req = ImageGenerationRequest(prompt: "a cat")
         let response = try await client.ai.createImage(req)
-        XCTAssertEqual(response.data.count, 1)
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/images/generations"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/ai/images/generations"))
+        #expect(response.data.count == 1)
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/images/generations"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/ai/images/generations"))
 
         let body = lastCapturedBody()
-        XCTAssertEqual(body?["prompt"] as? String, "a cat")
+        #expect(body?["prompt"] as? String == "a cat")
     }
 
-    func testCreateModeration() async throws {
+    @Test func createModeration() async throws {
         // Source: lambda/ai_proxy/index.js normalizeProviderResponse (~line 830-874)
         MockURLProtocol.responseData = FIXTURE_MODERATION.data(using: .utf8)!
 
         let client = makeClient()
         let req = ModerationRequest(input: "hello world")
         let response = try await client.ai.createModeration(req)
-        XCTAssertEqual(response.results.count, 1)
-        XCTAssertEqual(response.results[0].flagged, false)
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/moderations"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/ai/moderations"))
+        #expect(response.results.count == 1)
+        #expect(response.results[0].flagged == false)
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/moderations"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/ai/moderations"))
     }
 
-    func testGetUsageSummary() async throws {
+    @Test func getUsageSummary() async throws {
         // Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 457-474)
         // Returns { summaries: AiUsageSummaryRecord[] }
         MockURLProtocol.responseData = FIXTURE_AI_USAGE_SUMMARY.data(using: .utf8)!
 
         let client = makeClient()
         let summary = try await client.ai.getUsageSummary()
-        XCTAssertEqual(summary.summaries?.count, 1)
-        XCTAssertEqual(summary.summaries?[0].totalRequests, 150)
-        XCTAssertEqual(summary.totalRequests, 150)
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/usage/summary"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/apps/test-app/ai/usage/summary"))
+        #expect(summary.summaries?.count == 1)
+        #expect(summary.summaries?[0].totalRequests == 150)
+        #expect(summary.totalRequests == 150)
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/usage/summary"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/ai/usage/summary"))
     }
 
-    func testGetUsage() async throws {
+    @Test func getUsage() async throws {
         // Source: lambda/ai_proxy/index.js handleGetUsage (~line 436-454)
         // Returns { usage: AiUsageRecord[], count: N }
         MockURLProtocol.responseData = FIXTURE_AI_USAGE.data(using: .utf8)!
 
         let client = makeClient()
         let response = try await client.ai.getUsage()
-        XCTAssertEqual(response.usage.count, 1)
-        XCTAssertEqual(response.usage[0].usageId, "usage-001")
-        XCTAssertEqual(response.count, 1)
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/usage"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/apps/test-app/ai/usage"))
+        #expect(response.usage.count == 1)
+        #expect(response.usage[0].usageId == "usage-001")
+        #expect(response.count == 1)
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/usage"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/ai/usage"))
     }
 
     // MARK: - Devices Service
 
-    func testDevicesList() async throws {
+    @Test func devicesList() async throws {
         // Source: lambda/devices/index.js (~line 22-26) - returns { items: Device[] }
         MockURLProtocol.responseData = FIXTURE_DEVICES.data(using: .utf8)!
 
         let client = makeClient()
         let catalog = try await client.devices.list()
-        XCTAssertEqual(catalog.allDevices.count, 1)
-        XCTAssertEqual(catalog.allDevices[0].deviceName, "Test Device")
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/devices"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/apps/test-app/devices"))
+        #expect(catalog.allDevices.count == 1)
+        #expect(catalog.allDevices[0].deviceName == "Test Device")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/devices"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/devices"))
     }
 
-    func testDevicesGetAll() async throws {
+    @Test func devicesGetAll() async throws {
         // Source: lambda/devices/index.js (~line 22-26) - returns { items: Device[] }
         MockURLProtocol.responseData = FIXTURE_DEVICES.data(using: .utf8)!
 
         let client = makeClient()
         let devices = try await client.devices.getAll()
-        XCTAssertEqual(devices.count, 1)
-        XCTAssertEqual(devices[0].deviceName, "Test Device")
+        #expect(devices.count == 1)
+        #expect(devices[0].deviceName == "Test Device")
     }
 
     // MARK: - Endpoints Service
 
-    func testEndpointsCreate() async throws {
+    @Test func endpointsCreate() async throws {
         // Source: lambda/endpoints/index.js handleCreate (~line 221-232)
         MockURLProtocol.responseData = FIXTURE_ENDPOINT_CREATED.data(using: .utf8)!
 
         let client = makeClient()
         let ep = try await client.endpoints.create()
-        XCTAssertEqual(ep.slug, "abc123")
-        XCTAssertEqual(ep.status, "active")
-        XCTAssertEqual(ep.hmacSecret, "hmac-secret-value")
-        XCTAssertEqual(ep.hmacRequired, true)
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/endpoints"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/endpoints"))
+        #expect(ep.slug == "abc123")
+        #expect(ep.status == "active")
+        #expect(ep.hmacSecret == "hmac-secret-value")
+        #expect(ep.hmacRequired == true)
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/endpoints"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/endpoints"))
     }
 
-    func testEndpointsRevokeAndReplace() async throws {
+    @Test func endpointsRevokeAndReplace() async throws {
         // Source: lambda/endpoints/index.js handleRevokeAndReplace (~line 402-414)
         MockURLProtocol.responseData = FIXTURE_ENDPOINT_REVOKE_AND_REPLACE.data(using: .utf8)!
 
         let client = makeClient()
         let result = try await client.endpoints.revokeAndReplace(oldSlug: "old-slug")
-        XCTAssertEqual(result.oldSlug, "old-slug")
-        XCTAssertEqual(result.newSlug, "new-slug")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/endpoints/revoke_and_replace"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/endpoints/revoke_and_replace"))
+        #expect(result.oldSlug == "old-slug")
+        #expect(result.newSlug == "new-slug")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/endpoints/revoke_and_replace"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/endpoints/revoke_and_replace"))
     }
 
-    func testEndpointsRevoke() async throws {
+    @Test func endpointsRevoke() async throws {
         // Source: lambda/endpoints/index.js handleRevoke (~line 521-524)
         MockURLProtocol.responseData = FIXTURE_ENDPOINT_REVOKE.data(using: .utf8)!
 
         let client = makeClient()
         let result = try await client.endpoints.revoke(slug: "my-slug")
-        XCTAssertTrue(result.revoked)
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/apps/test-app/endpoints/revoke"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/apps/test-app/endpoints/revoke"))
+        #expect(result.revoked)
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/endpoints/revoke"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/endpoints/revoke"))
     }
 
-    func testPostEvent() async throws {
+    @Test func postEvent() async throws {
         // Source: lambda/events/index.js POST handler (~line 238-246)
         MockURLProtocol.responseData = FIXTURE_POST_EVENT.data(using: .utf8)!
 
         let client = makeClient()
         let payload: [String: AnyCodable] = ["text": AnyCodable("hello")]
         let result = try await client.endpoints.postEvent(slug: "my-slug", payload: payload)
-        XCTAssertEqual(result.slug, "my-slug")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/events/my-slug"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/events/my-slug"))
+        #expect(result.slug == "my-slug")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/events/my-slug"))
+        #expect(routeExists(method: "POST", path: "/events/my-slug"))
     }
 
-    func testConsumeEvent() async throws {
+    @Test func consumeEvent() async throws {
         // Source: lambda/events/index.js GET handler empty slot (~line 262-267)
         MockURLProtocol.responseData = FIXTURE_CONSUME_EVENT_EMPTY.data(using: .utf8)!
 
         let client = makeClient()
         let event = try await client.endpoints.consumeEvent(slug: "my-slug")
-        XCTAssertEqual(event.slug, "my-slug")
-        XCTAssertEqual(event.empty, true)
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/events/my-slug"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/events/my-slug"))
+        #expect(event.slug == "my-slug")
+        #expect(event.empty == true)
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/events/my-slug"))
+        #expect(routeExists(method: "GET", path: "/events/my-slug"))
     }
 
     // MARK: - Lookup Tables Service
 
-    func testLookupTablesList() async throws {
+    @Test func lookupTablesList() async throws {
         // Source: lambda/lookup_tables/index.js list handler with toSummary (~line 867-880)
         MockURLProtocol.responseData = FIXTURE_LOOKUP_TABLES_LIST.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.lookupTables.list()
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/lookup-tables"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/lookup-tables"))
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/lookup-tables"))
+        #expect(routeExists(method: "GET", path: "/lookup-tables"))
     }
 
-    func testLookupTablesGet() async throws {
+    @Test func lookupTablesGet() async throws {
         // Source: lambda/lookup_tables/index.js toClientDetail (~line 903-920)
         MockURLProtocol.responseData = FIXTURE_LOOKUP_TABLE_DETAIL.data(using: .utf8)!
 
         let client = makeClient()
         let detail = try await client.lookupTables.get(lookupTableId: "lt-1")
-        XCTAssertEqual(detail.lookupTableId, "lt-1")
-        XCTAssertEqual(detail.name, "Colors")
-        XCTAssertEqual(detail.chunks.count, 1)
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/lookup-tables/lt-1"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/lookup-tables/lt-1"))
+        #expect(detail.lookupTableId == "lt-1")
+        #expect(detail.name == "Colors")
+        #expect(detail.chunks.count == 1)
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/lookup-tables/lt-1"))
+        #expect(routeExists(method: "GET", path: "/lookup-tables/lt-1"))
     }
 
-    func testLookupTablesGetChunk() async throws {
+    @Test func lookupTablesGetChunk() async throws {
         // Source: lambda/lookup_tables/index.js handleClientChunk (~line 134-138)
         MockURLProtocol.responseData = FIXTURE_LOOKUP_TABLE_CHUNK.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.lookupTables.getChunk(lookupTableId: "lt-1", chunkIndex: 0)
-        XCTAssertEqual(lastCapturedMethod(), "GET")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/lookup-tables/lt-1/chunks/0"))
-        XCTAssertTrue(routeExists(method: "GET", path: "/lookup-tables/lt-1/chunks/0"))
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/lookup-tables/lt-1/chunks/0"))
+        #expect(routeExists(method: "GET", path: "/lookup-tables/lt-1/chunks/0"))
     }
 
     // MARK: - Auth Service
 
-    func testRefreshToken() async throws {
+    @Test func refreshToken() async throws {
         MockURLProtocol.responseData = """
         {"accessToken":"new-token","expiresIn":3600}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.auth.refreshToken("old-refresh")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/auth/client/refresh"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/auth/client/refresh"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/auth/client/refresh"))
+        #expect(routeExists(method: "POST", path: "/auth/client/refresh"))
     }
 
-    func testLinkProvider() async throws {
+    @Test func linkProvider() async throws {
         MockURLProtocol.responseData = """
         {"success":true,"linkedProviders":["apple","google"]}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.auth.linkProvider(provider: "google", token: "gtoken")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/auth/client/link"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/auth/client/link"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/auth/client/link"))
+        #expect(routeExists(method: "POST", path: "/auth/client/link"))
     }
 
-    func testPasskeyRegisterOptions() async throws {
+    @Test func passkeyRegisterOptions() async throws {
         MockURLProtocol.responseData = """
         {"challenge":"abc","rp":{"id":"example.com","name":"Example"},"user":{"id":"u1","name":"user","displayName":"User"}}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.auth.getPasskeyRegisterOptions()
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/auth/client/passkey/register/options"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/auth/client/passkey/register/options"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/auth/client/passkey/register/options"))
+        #expect(routeExists(method: "POST", path: "/auth/client/passkey/register/options"))
     }
 
-    func testPasskeyAuthOptions() async throws {
+    @Test func passkeyAuthOptions() async throws {
         MockURLProtocol.responseData = """
         {"challenge":"xyz","rpId":"example.com"}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.auth.getPasskeyAuthOptions()
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/auth/client/passkey/authenticate/options"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/auth/client/passkey/authenticate/options"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/auth/client/passkey/authenticate/options"))
+        #expect(routeExists(method: "POST", path: "/auth/client/passkey/authenticate/options"))
     }
 
-    func testEmailMagicLinkRequest() async throws {
+    @Test func emailMagicLinkRequest() async throws {
         MockURLProtocol.responseData = """
         {"success":true,"message":"Email sent"}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.auth.requestEmailMagicLink(email: "user@test.com")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/auth/client/email/request"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/auth/client/email/request"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/auth/client/email/request"))
+        #expect(routeExists(method: "POST", path: "/auth/client/email/request"))
 
         let body = lastCapturedBody()
-        XCTAssertEqual(body?["email"] as? String, "user@test.com")
+        #expect(body?["email"] as? String == "user@test.com")
     }
 
-    func testEmailMagicLinkVerify() async throws {
+    @Test func emailMagicLinkVerify() async throws {
         MockURLProtocol.responseData = """
         {"accessToken":"tok","refreshToken":"ref"}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.auth.verifyEmailMagicLink(token: "magic-token")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/auth/client/email/verify"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/auth/client/email/verify"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/auth/client/email/verify"))
+        #expect(routeExists(method: "POST", path: "/auth/client/email/verify"))
     }
 
     // MARK: - Apple Auth Service
 
-    func testAppleExchange() async throws {
+    @Test func appleExchange() async throws {
         MockURLProtocol.responseData = """
         {"accessToken":"tok","refreshToken":"ref","isNewUser":true}
         """.data(using: .utf8)!
@@ -703,128 +704,128 @@ final class ContractTests: XCTestCase {
         let client = makeClient()
         let req = AppleExchangeRequest(identityToken: "apple-id-token", authorizationCode: nil, user: nil)
         _ = try await client.appleAuth.exchangeToken(req)
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/auth/client/apple/exchange"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/auth/client/apple/exchange"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/auth/client/apple/exchange"))
+        #expect(routeExists(method: "POST", path: "/auth/client/apple/exchange"))
     }
 
     // MARK: - Apple IAP Service
 
-    func testIapVerifyTransaction() async throws {
+    @Test func iapVerifyTransaction() async throws {
         MockURLProtocol.responseData = """
         {"valid":true,"productId":"com.app.premium","transactionId":"tx-1"}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.appleIap.verifyTransaction(transactionId: "tx-1")
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/iap/transactions/verify"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/iap/transactions/verify"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/iap/transactions/verify"))
+        #expect(routeExists(method: "POST", path: "/iap/transactions/verify"))
 
         let body = lastCapturedBody()
-        XCTAssertEqual(body?["transactionId"] as? String, "tx-1")
+        #expect(body?["transactionId"] as? String == "tx-1")
     }
 
-    func testIapRestorePurchases() async throws {
+    @Test func iapRestorePurchases() async throws {
         MockURLProtocol.responseData = """
         {"restoredTransactions":[],"entitlements":[]}
         """.data(using: .utf8)!
 
         let client = makeClient()
         _ = try await client.appleIap.restorePurchases()
-        XCTAssertEqual(lastCapturedMethod(), "POST")
-        XCTAssertTrue(lastCapturedPath()!.hasSuffix("/iap/restore/sync"))
-        XCTAssertTrue(routeExists(method: "POST", path: "/iap/restore/sync"))
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/iap/restore/sync"))
+        #expect(routeExists(method: "POST", path: "/iap/restore/sync"))
     }
 
     // MARK: - Response Decoding Validation (Golden fixture shape tests)
 
-    func testAppInfoDecodesFromRealShape() throws {
+    @Test func appInfoDecodesFromRealShape() throws {
         // Source: lambda/templates/index.js handleGetAppInfo via ok() (~line 1028)
         let json = FIXTURE_APP_INFO.data(using: .utf8)!
         let info = try JSONDecoder().decode(AppInfo.self, from: json)
-        XCTAssertEqual(info.appId, "test-app")
-        XCTAssertEqual(info.slug, "test-app")
-        XCTAssertEqual(info.name, "Test App")
+        #expect(info.appId == "test-app")
+        #expect(info.slug == "test-app")
+        #expect(info.name == "Test App")
     }
 
-    func testDeviceCatalogDecodesFromRealShape() throws {
+    @Test func deviceCatalogDecodesFromRealShape() throws {
         // Source: lambda/devices/index.js (~line 22-26) - returns { items: Device[] }
         let json = FIXTURE_DEVICES.data(using: .utf8)!
         let catalog = try JSONDecoder().decode(DeviceCatalogResponse.self, from: json)
-        XCTAssertEqual(catalog.allDevices.count, 1)
-        XCTAssertEqual(catalog.allDevices[0].deviceName, "Test Device")
+        #expect(catalog.allDevices.count == 1)
+        #expect(catalog.allDevices[0].deviceName == "Test Device")
     }
 
-    func testLookupTableSummaryDecodesFromRealShape() throws {
+    @Test func lookupTableSummaryDecodesFromRealShape() throws {
         // Source: lambda/lookup_tables/index.js toSummary (~line 867-880)
         let json = """
         {"lookup_table_id":"lt-1","name":"Colors","description":null,"schema_keys":["hex","name"],"schema_key_count":2,"schema_keys_truncated":false,"version":3,"payload_hash":"abc","storage_mode":"chunked","chunk_count":2,"updated_at":1700000000}
         """.data(using: .utf8)!
         let summary = try JSONDecoder().decode(LookupTableSummary.self, from: json)
-        XCTAssertEqual(summary.lookupTableId, "lt-1")
-        XCTAssertEqual(summary.schemaKeys.count, 2)
+        #expect(summary.lookupTableId == "lt-1")
+        #expect(summary.schemaKeys.count == 2)
     }
 
-    func testChatCompletionResponseDecodesFromRealShape() throws {
+    @Test func chatCompletionResponseDecodesFromRealShape() throws {
         // Source: lambda/ai_proxy/index.js normalizeProviderResponse (~line 830-874)
         // Real Lambda returns normalized format, not raw OpenAI format
         let json = FIXTURE_CHAT_COMPLETION.data(using: .utf8)!
         let response = try JSONDecoder().decode(ChatCompletionResponse.self, from: json)
-        XCTAssertEqual(response.choices.count, 1)
-        XCTAssertEqual(response.choices[0].message.content, "Hello!")
+        #expect(response.choices.count == 1)
+        #expect(response.choices[0].message.content == "Hello!")
     }
 
-    func testCreateEndpointResponseDecodesFromRealShape() throws {
+    @Test func createEndpointResponseDecodesFromRealShape() throws {
         // Source: lambda/endpoints/index.js handleCreate (~line 221-232)
         let json = FIXTURE_ENDPOINT_CREATED.data(using: .utf8)!
         let response = try JSONDecoder().decode(CreateEndpointResponse.self, from: json)
-        XCTAssertEqual(response.slug, "abc123")
-        XCTAssertEqual(response.hmacSecret, "hmac-secret-value")
-        XCTAssertEqual(response.hmacRequired, true)
+        #expect(response.slug == "abc123")
+        #expect(response.hmacSecret == "hmac-secret-value")
+        #expect(response.hmacRequired == true)
     }
 
-    func testConsumedEventDecodesFromRealShape() throws {
+    @Test func consumedEventDecodesFromRealShape() throws {
         // Source: lambda/events/index.js GET handler with data (~line 250-260)
         let json = FIXTURE_CONSUME_EVENT.data(using: .utf8)!
         let event = try JSONDecoder().decode(ConsumedEvent.self, from: json)
-        XCTAssertEqual(event.slug, "my-slug")
-        XCTAssertEqual(event.text, "hello")
-        XCTAssertEqual(event.keywords, ["greeting"])
-        XCTAssertEqual(event.empty, false)
+        #expect(event.slug == "my-slug")
+        #expect(event.text == "hello")
+        #expect(event.keywords == ["greeting"])
+        #expect(event.empty == false)
     }
 
-    func testAiUsageSummaryDecodesFromRealShape() throws {
+    @Test func aiUsageSummaryDecodesFromRealShape() throws {
         // Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 457-474)
         let json = FIXTURE_AI_USAGE_SUMMARY.data(using: .utf8)!
         let summary = try JSONDecoder().decode(AiUsageSummary.self, from: json)
-        XCTAssertEqual(summary.summaries?.count, 1)
-        XCTAssertEqual(summary.summaries?[0].period, "MONTHLY#2026-03")
-        XCTAssertEqual(summary.summaries?[0].totalRequests, 150)
-        XCTAssertEqual(summary.totalRequests, 150)
+        #expect(summary.summaries?.count == 1)
+        #expect(summary.summaries?[0].period == "MONTHLY#2026-03")
+        #expect(summary.summaries?[0].totalRequests == 150)
+        #expect(summary.totalRequests == 150)
     }
 
-    func testAiUsageDecodesFromRealShape() throws {
+    @Test func aiUsageDecodesFromRealShape() throws {
         // Source: lambda/ai_proxy/index.js handleGetUsage (~line 436-454)
         let json = FIXTURE_AI_USAGE.data(using: .utf8)!
         let response = try JSONDecoder().decode(AiUsageResponse.self, from: json)
-        XCTAssertEqual(response.usage.count, 1)
-        XCTAssertEqual(response.usage[0].usageId, "usage-001")
-        XCTAssertEqual(response.usage[0].providerId, "openai")
-        XCTAssertEqual(response.count, 1)
+        #expect(response.usage.count == 1)
+        #expect(response.usage[0].usageId == "usage-001")
+        #expect(response.usage[0].providerId == "openai")
+        #expect(response.count == 1)
     }
 
     // MARK: - HMAC Helpers
 
-    func testGenerateHmacSignature() {
+    @Test func generateHmacSignatureWorks() {
         let headers = generateHmacSignature(slug: "my-slug", body: "{}", secret: "test-secret", timestampSec: 1700000000)
-        XCTAssertEqual(headers.timestamp, "1700000000")
+        #expect(headers.timestamp == "1700000000")
         // Signature should be 64 hex chars (SHA-256 = 32 bytes = 64 hex)
-        XCTAssertEqual(headers.signature.count, 64)
-        XCTAssertTrue(headers.signature.allSatisfy { "0123456789abcdef".contains($0) })
+        #expect(headers.signature.count == 64)
+        #expect(headers.signature.allSatisfy { "0123456789abcdef".contains($0) })
     }
 
-    func testVerifyHmacSignature() {
+    @Test func verifyHmacSignatureWorks() {
         let slug = "my-slug"
         let body = "{\"key\":\"val\"}"
         let secret = "test-secret"
@@ -834,32 +835,32 @@ final class ContractTests: XCTestCase {
         let nowTs = Int(Date().timeIntervalSince1970)
         let nowHeaders = generateHmacSignature(slug: slug, body: body, secret: secret, timestampSec: nowTs)
         let valid = verifyHmacSignature(slug: slug, body: body, signature: nowHeaders.signature, timestamp: nowHeaders.timestamp, secret: secret)
-        XCTAssertTrue(valid)
+        #expect(valid)
     }
 
-    func testVerifyHmacSignatureRejectsWrongSecret() {
+    @Test func verifyHmacSignatureRejectsWrongSecret() {
         let slug = "my-slug"
         let body = "{}"
         let nowTs = Int(Date().timeIntervalSince1970)
 
         let headers = generateHmacSignature(slug: slug, body: body, secret: "correct-secret", timestampSec: nowTs)
         let valid = verifyHmacSignature(slug: slug, body: body, signature: headers.signature, timestamp: headers.timestamp, secret: "wrong-secret")
-        XCTAssertFalse(valid)
+        #expect(!valid)
     }
 
-    func testVerifyHmacSignatureRejectsExpiredTimestamp() {
+    @Test func verifyHmacSignatureRejectsExpiredTimestamp() {
         let slug = "my-slug"
         let body = "{}"
         let oldTs = Int(Date().timeIntervalSince1970) - 400 // 400 seconds ago
 
         let headers = generateHmacSignature(slug: slug, body: body, secret: "secret", timestampSec: oldTs)
         let valid = verifyHmacSignature(slug: slug, body: body, signature: headers.signature, timestamp: headers.timestamp, secret: "secret")
-        XCTAssertFalse(valid)
+        #expect(!valid)
     }
 
-    func testHmacDeterministic() {
+    @Test func hmacDeterministic() {
         let h1 = generateHmacSignature(slug: "s", body: "b", secret: "k", timestampSec: 100)
         let h2 = generateHmacSignature(slug: "s", body: "b", secret: "k", timestampSec: 100)
-        XCTAssertEqual(h1.signature, h2.signature)
+        #expect(h1.signature == h2.signature)
     }
 }
