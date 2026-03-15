@@ -110,15 +110,16 @@ internal class CertificatePinningDelegate: NSObject, URLSessionDelegate {
         }
 
         // Check each certificate in the chain for a matching pin
-        let certificateCount = SecTrustGetCertificateCount(serverTrust)
-        for index in 0..<certificateCount {
-            if let certificate = SecTrustGetCertificateAtIndex(serverTrust, index) {
-                let publicKeyHash = hashPublicKey(of: certificate)
-                if pins.contains(publicKeyHash) {
-                    let credential = URLCredential(trust: serverTrust)
-                    completionHandler(.useCredential, credential)
-                    return
-                }
+        guard let certificateChain = SecTrustCopyCertificateChain(serverTrust) as? [SecCertificate] else {
+            completionHandler(.cancelAuthenticationChallenge, nil)
+            return
+        }
+        for certificate in certificateChain {
+            let publicKeyHash = hashPublicKey(of: certificate)
+            if pins.contains(publicKeyHash) {
+                let credential = URLCredential(trust: serverTrust)
+                completionHandler(.useCredential, credential)
+                return
             }
         }
 
@@ -144,7 +145,7 @@ internal class CertificatePinningDelegate: NSObject, URLSessionDelegate {
         }
 
         // Get the public key
-        guard let publicKey = SecTrustCopyPublicKey(trust) else {
+        guard let publicKey = SecTrustCopyKey(trust) else {
             return Data()
         }
 

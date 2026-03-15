@@ -40,7 +40,10 @@ public struct Template: Codable, Sendable {
 }
 
 /// A simple type-erased codable wrapper for template content.
-public struct AnyCodable: Codable, Sendable {
+/// Uses @unchecked Sendable because the underlying `Any` value is immutable after init —
+/// only value types (String, Int, Double, Bool) and Sendable collections ([AnyCodable],
+/// [String: AnyCodable]) are stored, so cross-isolation sharing is safe.
+public struct AnyCodable: Codable, @unchecked Sendable {
     public let value: Any
 
     public init(_ value: Any) {

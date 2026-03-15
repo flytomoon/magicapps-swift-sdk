@@ -36,7 +36,7 @@ public struct LookupTableListResponse: Decodable {
 }
 
 /// A reference to an individual data chunk in a lookup table.
-public struct LookupTableChunkRef: Decodable {
+public struct LookupTableChunkRef: Decodable, Sendable {
     public let index: Int
     public let path: String
     public let sha256: String
