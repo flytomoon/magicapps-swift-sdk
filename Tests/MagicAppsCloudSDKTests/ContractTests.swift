@@ -159,17 +159,17 @@ func lastCapturedBody() -> [String: Any]? {
 /// Source: lambda/templates/index.js ok() helper (~line 1028)
 /// Used by handleGet (~line 880) - returns single template item
 let FIXTURE_TEMPLATE = """
-{"template_id":"tmpl-1","app_id":"test-app","name":"Test Template","slug":"test-template","description":"A test template","content":{},"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}
+{"template_id":"tmpl-1","app_id":"test-app","template_name":"Test Template","slug":"test-template","description":"A test template","content":{},"created_at":1735689600,"updated_at":1735689600}
 """
 
 /// Source: lambda/templates/index.js handleList (~line 860) - returns { items: Template[] }
 let FIXTURE_TEMPLATES_LIST = """
-{"items":[{"template_id":"tmpl-1","app_id":"test-app","name":"Test Template","slug":"test-template","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}]}
+{"items":[{"template_id":"tmpl-1","app_id":"test-app","template_name":"Test Template","slug":"test-template","created_at":1735689600,"updated_at":1735689600}]}
 """
 
 /// Source: lambda/templates/index.js handleCreate (~line 963) - returns created item with pk/sk
 let FIXTURE_TEMPLATE_CREATED = """
-{"template_id":"tmpl-new","app_id":"test-app","name":"New","slug":"new","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}
+{"template_id":"tmpl-new","app_id":"test-app","template_name":"New","slug":"new","created_at":1735689600,"updated_at":1735689600}
 """
 
 /// Source: lambda/templates/index.js handleRegistryApps (~line 515-518) via toCardApp (~line 571-591)
@@ -358,7 +358,7 @@ struct ContractTests {
     @Test func templatesUpdate() async throws {
         // Source: lambda/templates/index.js handleUpdate - returns updated template
         MockURLProtocol.responseData = """
-        {"template_id":"tmpl-1","app_id":"test-app","name":"Updated","slug":"updated","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-06-01T00:00:00Z"}
+        {"template_id":"tmpl-1","app_id":"test-app","template_name":"Updated","slug":"updated","created_at":1735689600,"updated_at":1748736000}
         """.data(using: .utf8)!
 
         let client = makeClient()

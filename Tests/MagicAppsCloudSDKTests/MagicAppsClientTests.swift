@@ -60,21 +60,22 @@ struct MagicAppsClientTests {
     }
 
     @Test func templateDecoding() throws {
+        // Source: openapi.yaml Template schema — created_at/updated_at are type: number (epoch)
         let json = """
         {
             "template_id": "tmpl-1",
             "app_id": "test-app",
-            "name": "Test Template",
+            "template_name": "Test Template",
             "description": null,
-            "created_at": "2025-01-01T00:00:00Z",
-            "updated_at": "2025-01-01T00:00:00Z"
+            "created_at": 1735689600,
+            "updated_at": 1735689600
         }
         """.data(using: .utf8)!
 
         let template = try JSONDecoder().decode(Template.self, from: json)
         #expect(template.templateId == "tmpl-1")
         #expect(template.appId == "test-app")
-        #expect(template.name == "Test Template")
+        #expect(template.templateName == "Test Template")
         #expect(template.description == nil)
     }
 

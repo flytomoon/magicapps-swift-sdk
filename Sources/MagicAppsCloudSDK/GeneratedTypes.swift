@@ -75,7 +75,7 @@ public struct AIProvider: Codable, Sendable {
     }
 }
 
-public struct Error: Codable, Sendable {
+public struct ErrorResponse: Codable, Sendable {
     public let error: String
     public let message: String
 }
