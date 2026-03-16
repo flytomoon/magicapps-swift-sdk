@@ -265,10 +265,10 @@ public struct Template: Codable, Sendable {
     public let templateName: String?
     public let templateType: String?
     /// >
-    public let sourceMode: String?
-    /// Auto-derived behavioral classification. Read-only — computed from template_type, http_get_mode, and template identity.
+    public let httpGetMode: String?
+    /// >
     public let behaviorRole: String?
-    /// Configuration for api_poll source_mode. Only applies when source_mode=api_poll.
+    /// Configuration for input_source_poll http_get_mode. Only applies when http_get_mode=input_source_poll.
     public let pollConfig: [String: AnyCodable]?
     /// >
     public let pollMode: String?
@@ -280,7 +280,7 @@ public struct Template: Codable, Sendable {
     public let backoffMs: Int?
     /// >
     public let emptyResultBehavior: String?
-    /// API-poll-specific response parsing configuration. Only applies when source_mode=api_poll.
+    /// API poll response parsing configuration. Only applies when http_get_mode=input_source_poll.
     public let apiPollConfig: [String: AnyCodable]?
     /// >
     public let responseType: String?
@@ -346,7 +346,7 @@ public struct Template: Codable, Sendable {
         case appId = "app_id"
         case templateName = "template_name"
         case templateType = "template_type"
-        case sourceMode = "source_mode"
+        case httpGetMode = "http_get_mode"
         case behaviorRole = "behavior_role"
         case pollConfig = "poll_config"
         case pollMode = "poll_mode"
