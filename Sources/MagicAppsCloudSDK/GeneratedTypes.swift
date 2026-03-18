@@ -265,6 +265,8 @@ public struct Template: Codable, Sendable {
     public let templateName: String?
     public let templateType: String?
     /// >
+    public let slugMode: String?
+    /// >
     public let httpGetMode: String?
     /// >
     public let behaviorRole: String?
@@ -346,6 +348,7 @@ public struct Template: Codable, Sendable {
         case appId = "app_id"
         case templateName = "template_name"
         case templateType = "template_type"
+        case slugMode = "slug_mode"
         case httpGetMode = "http_get_mode"
         case behaviorRole = "behavior_role"
         case pollConfig = "poll_config"
@@ -412,6 +415,7 @@ public struct AppIntegration: Codable, Sendable {
     public let templateId: String?
     public let templateName: String?
     public let templateType: String?
+    public let slugMode: String?
     public let endpointInputMode: String?
     public let endpointInputPlaceholder: String?
     public let showEndpointInput: Bool?
@@ -434,6 +438,7 @@ public struct AppIntegration: Codable, Sendable {
         case templateId = "template_id"
         case templateName = "template_name"
         case templateType = "template_type"
+        case slugMode = "slug_mode"
         case endpointInputMode = "endpoint_input_mode"
         case endpointInputPlaceholder = "endpoint_input_placeholder"
         case showEndpointInput = "show_endpoint_input"
@@ -458,6 +463,7 @@ public struct AppIntegrationV2: Codable, Sendable {
     public let templateId: String?
     public let templateName: String?
     public let templateType: String?
+    public let slugMode: String?
     public let endpointInputMode: String?
     public let endpointInputPlaceholder: String?
     public let showEndpointInput: Bool?
@@ -480,6 +486,7 @@ public struct AppIntegrationV2: Codable, Sendable {
         case templateId = "template_id"
         case templateName = "template_name"
         case templateType = "template_type"
+        case slugMode = "slug_mode"
         case endpointInputMode = "endpoint_input_mode"
         case endpointInputPlaceholder = "endpoint_input_placeholder"
         case showEndpointInput = "show_endpoint_input"
