@@ -270,6 +270,8 @@ public struct Template: Codable, Sendable {
     public let httpGetMode: String?
     /// >
     public let behaviorRole: String?
+    /// >
+    public let inboundValueField: String?
     /// Configuration for input_source_poll http_get_mode. Only applies when http_get_mode=input_source_poll.
     public let pollConfig: [String: AnyCodable]?
     /// >
@@ -351,6 +353,7 @@ public struct Template: Codable, Sendable {
         case slugMode = "slug_mode"
         case httpGetMode = "http_get_mode"
         case behaviorRole = "behavior_role"
+        case inboundValueField = "inbound_value_field"
         case pollConfig = "poll_config"
         case pollMode = "poll_mode"
         case timeoutMs = "timeout_ms"
@@ -416,6 +419,18 @@ public struct AppIntegration: Codable, Sendable {
     public let templateName: String?
     public let templateType: String?
     public let slugMode: String?
+    public let behaviorRole: String?
+    /// >
+    public let inboundValueField: String?
+    public let httpGetMode: String?
+    public let pollMode: String?
+    public let timeoutMs: Int?
+    public let maxAttempts: Int?
+    public let backoffMs: Int?
+    public let emptyResultBehavior: String?
+    public let responseType: String?
+    /// Dot-path to extract value from JSON responses (for example, data.transcription.text).
+    public let responsePath: String?
     public let endpointInputMode: String?
     public let endpointInputPlaceholder: String?
     public let showEndpointInput: Bool?
@@ -439,6 +454,16 @@ public struct AppIntegration: Codable, Sendable {
         case templateName = "template_name"
         case templateType = "template_type"
         case slugMode = "slug_mode"
+        case behaviorRole = "behavior_role"
+        case inboundValueField = "inbound_value_field"
+        case httpGetMode = "http_get_mode"
+        case pollMode = "poll_mode"
+        case timeoutMs = "timeout_ms"
+        case maxAttempts = "max_attempts"
+        case backoffMs = "backoff_ms"
+        case emptyResultBehavior = "empty_result_behavior"
+        case responseType = "response_type"
+        case responsePath = "response_path"
         case endpointInputMode = "endpoint_input_mode"
         case endpointInputPlaceholder = "endpoint_input_placeholder"
         case showEndpointInput = "show_endpoint_input"
@@ -464,6 +489,18 @@ public struct AppIntegrationV2: Codable, Sendable {
     public let templateName: String?
     public let templateType: String?
     public let slugMode: String?
+    public let behaviorRole: String?
+    /// >
+    public let inboundValueField: String?
+    public let httpGetMode: String?
+    public let pollMode: String?
+    public let timeoutMs: Int?
+    public let maxAttempts: Int?
+    public let backoffMs: Int?
+    public let emptyResultBehavior: String?
+    public let responseType: String?
+    /// Dot-path to extract value from JSON responses (for example, data.transcription.text).
+    public let responsePath: String?
     public let endpointInputMode: String?
     public let endpointInputPlaceholder: String?
     public let showEndpointInput: Bool?
@@ -487,6 +524,16 @@ public struct AppIntegrationV2: Codable, Sendable {
         case templateName = "template_name"
         case templateType = "template_type"
         case slugMode = "slug_mode"
+        case behaviorRole = "behavior_role"
+        case inboundValueField = "inbound_value_field"
+        case httpGetMode = "http_get_mode"
+        case pollMode = "poll_mode"
+        case timeoutMs = "timeout_ms"
+        case maxAttempts = "max_attempts"
+        case backoffMs = "backoff_ms"
+        case emptyResultBehavior = "empty_result_behavior"
+        case responseType = "response_type"
+        case responsePath = "response_path"
         case endpointInputMode = "endpoint_input_mode"
         case endpointInputPlaceholder = "endpoint_input_placeholder"
         case showEndpointInput = "show_endpoint_input"
