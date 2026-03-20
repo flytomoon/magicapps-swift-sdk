@@ -63,12 +63,8 @@ func makeClient() -> MagicAppsClient {
 let API_ROUTES: [(method: String, path: String)] = [
     ("GET", "/ping"),
     ("GET", "/apps/{app_id}"),
-    ("GET", "/apps/{app_id}/templates"),
     ("GET", "/apps/{app_id}/templates/{template_id}"),
-    ("POST", "/apps/{app_id}/templates"),
-    ("PUT", "/apps/{app_id}/templates/{template_id}"),
-    ("DELETE", "/apps/{app_id}/templates/{template_id}"),
-    ("GET", "/registry/apps"),
+    ("GET", "/apps/{app_id}/catalog"),
     ("GET", "/apps/{app_id}/devices"),
     ("POST", "/apps/{app_id}/endpoints"),
     ("POST", "/apps/{app_id}/endpoints/revoke"),
@@ -90,10 +86,17 @@ let API_ROUTES: [(method: String, path: String)] = [
     ("POST", "/auth/client/passkey/register/verify"),
     ("POST", "/auth/client/passkey/authenticate/options"),
     ("POST", "/auth/client/passkey/authenticate/verify"),
-    ("POST", "/auth/client/email/request"),
-    ("POST", "/auth/client/email/verify"),
     ("POST", "/iap/transactions/verify"),
     ("POST", "/iap/restore/sync"),
+    ("GET", "/apps/{app_id}/client-config"),
+    ("POST", "/owner/register"),
+    ("POST", "/owner/migrate"),
+    ("GET", "/apps/{app_id}/settings"),
+    ("PUT", "/apps/{app_id}/settings"),
+    ("GET", "/apps/{app_id}/config"),
+    ("PUT", "/apps/{app_id}/config"),
+    ("GET", "/apps/{app_id}/integrations/{integration_id}/secret"),
+    ("POST", "/apps/{app_id}/integrations/{integration_id}/secret"),
 ]
 
 /// Check whether a concrete path + method matches any API Gateway route.
@@ -106,6 +109,7 @@ func routeExists(method: String, path: String) -> Bool {
             .replacingOccurrences(of: "{slug}", with: "my-slug")
             .replacingOccurrences(of: "{lookup_table_id}", with: "lt-1")
             .replacingOccurrences(of: "{chunk_index}", with: "0")
+            .replacingOccurrences(of: "{integration_id}", with: "intg-1")
         let methodMatch = route.method == "ANY" || route.method == method
         return methodMatch && resolved == path
     }
@@ -160,22 +164,6 @@ func lastCapturedBody() -> [String: Any]? {
 /// Used by handleGet (~line 880) - returns single template item
 let FIXTURE_TEMPLATE = """
 {"template_id":"tmpl-1","app_id":"test-app","name":"Test Template","slug":"test-template","description":"A test template","content":{},"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}
-"""
-
-/// Source: lambda/templates/index.js handleList (~line 860) - returns { items: Template[] }
-let FIXTURE_TEMPLATES_LIST = """
-{"items":[{"template_id":"tmpl-1","app_id":"test-app","name":"Test Template","slug":"test-template","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}]}
-"""
-
-/// Source: lambda/templates/index.js handleCreate (~line 963) - returns created item with pk/sk
-let FIXTURE_TEMPLATE_CREATED = """
-{"template_id":"tmpl-new","app_id":"test-app","name":"New","slug":"new","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}
-"""
-
-/// Source: lambda/templates/index.js handleRegistryApps (~line 515-518) via toCardApp (~line 571-591)
-/// Returns { items: CardApp[] }
-let FIXTURE_REGISTRY_APPS = """
-{"items":[{"app_id":"registry-app-1","name":"Registry App","slug":"registry-app","icon_url":"https://example.com/icon.png","description":"A registry app"}]}
 """
 
 /// Source: lambda/ai_proxy/index.js normalizeProviderResponse (~line 830-874)
@@ -317,17 +305,6 @@ struct ContractTests {
 
     // MARK: - Templates Service
 
-    @Test func templatesList() async throws {
-        // Source: lambda/templates/index.js handleList (~line 860) - returns { items: Template[] }
-        MockURLProtocol.responseData = FIXTURE_TEMPLATES_LIST.data(using: .utf8)!
-
-        let client = makeClient()
-        _ = try await client.templates.list()
-        #expect(lastCapturedMethod() == "GET")
-        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates"))
-        #expect(routeExists(method: "GET", path: "/apps/test-app/templates"))
-    }
-
     @Test func templatesGet() async throws {
         // Source: lambda/templates/index.js handleGet (~line 880) - returns single template
         MockURLProtocol.responseData = FIXTURE_TEMPLATE.data(using: .utf8)!
@@ -340,53 +317,17 @@ struct ContractTests {
         #expect(routeExists(method: "GET", path: "/apps/test-app/templates/tmpl-1"))
     }
 
-    @Test func templatesCreate() async throws {
-        // Source: lambda/templates/index.js handleCreate (~line 963)
-        MockURLProtocol.responseData = FIXTURE_TEMPLATE_CREATED.data(using: .utf8)!
-
-        let client = makeClient()
-        _ = try await client.templates.create(name: "New")
-        #expect(lastCapturedMethod() == "POST")
-        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates"))
-        #expect(routeExists(method: "POST", path: "/apps/test-app/templates"))
-
-        let body = lastCapturedBody()
-        #expect(body?["name"] != nil)
-        #expect(body?["name"] as? String == "New")
-    }
-
-    @Test func templatesUpdate() async throws {
-        // Source: lambda/templates/index.js handleUpdate - returns updated template
+    @Test func getCatalog() async throws {
         MockURLProtocol.responseData = """
-        {"template_id":"tmpl-1","app_id":"test-app","name":"Updated","slug":"updated","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-06-01T00:00:00Z"}
+        {"items":[{"app_id":"app-1","name":"Test App"}]}
         """.data(using: .utf8)!
 
         let client = makeClient()
-        let req = UpdateTemplateRequest(name: "Updated")
-        _ = try await client.templates.update(templateId: "tmpl-1", req)
-        #expect(lastCapturedMethod() == "PUT")
-        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
-        #expect(routeExists(method: "PUT", path: "/apps/test-app/templates/tmpl-1"))
-    }
-
-    @Test func templatesDelete() async throws {
-        let client = makeClient()
-        try await client.templates.delete(templateId: "tmpl-1")
-        #expect(lastCapturedMethod() == "DELETE")
-        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/templates/tmpl-1"))
-        #expect(routeExists(method: "DELETE", path: "/apps/test-app/templates/tmpl-1"))
-    }
-
-    @Test func browseRegistry() async throws {
-        // Source: lambda/templates/index.js handleRegistryApps (~line 515-518)
-        // Returns { items: CardApp[] } via toCardApp (~line 571-591)
-        MockURLProtocol.responseData = FIXTURE_REGISTRY_APPS.data(using: .utf8)!
-
-        let client = makeClient()
-        _ = try await client.templates.browseRegistry()
+        let catalog = try await client.templates.getCatalog()
+        #expect(catalog.allApps.count == 1)
         #expect(lastCapturedMethod() == "GET")
-        #expect(lastCapturedPath()!.hasSuffix("/registry/apps"))
-        #expect(routeExists(method: "GET", path: "/registry/apps"))
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/catalog"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/catalog"))
     }
 
     // MARK: - AI Service
@@ -667,33 +608,6 @@ struct ContractTests {
         #expect(routeExists(method: "POST", path: "/auth/client/passkey/authenticate/options"))
     }
 
-    @Test func emailMagicLinkRequest() async throws {
-        MockURLProtocol.responseData = """
-        {"success":true,"message":"Email sent"}
-        """.data(using: .utf8)!
-
-        let client = makeClient()
-        _ = try await client.auth.requestEmailMagicLink(email: "user@test.com")
-        #expect(lastCapturedMethod() == "POST")
-        #expect(lastCapturedPath()!.hasSuffix("/auth/client/email/request"))
-        #expect(routeExists(method: "POST", path: "/auth/client/email/request"))
-
-        let body = lastCapturedBody()
-        #expect(body?["email"] as? String == "user@test.com")
-    }
-
-    @Test func emailMagicLinkVerify() async throws {
-        MockURLProtocol.responseData = """
-        {"accessToken":"tok","refreshToken":"ref"}
-        """.data(using: .utf8)!
-
-        let client = makeClient()
-        _ = try await client.auth.verifyEmailMagicLink(token: "magic-token")
-        #expect(lastCapturedMethod() == "POST")
-        #expect(lastCapturedPath()!.hasSuffix("/auth/client/email/verify"))
-        #expect(routeExists(method: "POST", path: "/auth/client/email/verify"))
-    }
-
     // MARK: - Apple Auth Service
 
     @Test func appleExchange() async throws {
@@ -736,6 +650,149 @@ struct ContractTests {
         #expect(lastCapturedMethod() == "POST")
         #expect(lastCapturedPath()!.hasSuffix("/iap/restore/sync"))
         #expect(routeExists(method: "POST", path: "/iap/restore/sync"))
+    }
+
+    @Test func iapGetClientConfig() async throws {
+        MockURLProtocol.responseData = """
+        {"appId":"test-app","purchaseModes":["apple_iap"]}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let config = try await client.appleIap.getClientConfig()
+        #expect(config.appId == "test-app")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/client-config"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/client-config"))
+    }
+
+    // MARK: - Owner Service
+
+    @Test func ownerRegister() async throws {
+        MockURLProtocol.responseData = """
+        {"owner_token":"tok-abc123"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.owner.registerOwner(deviceOwnerId: "device-1", appId: "test-app")
+        #expect(response.ownerToken == "tok-abc123")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/owner/register"))
+        #expect(routeExists(method: "POST", path: "/owner/register"))
+
+        let body = lastCapturedBody()
+        #expect(body?["device_owner_id"] as? String == "device-1")
+        #expect(body?["app_id"] as? String == "test-app")
+    }
+
+    @Test func ownerRegisterWithHcaptcha() async throws {
+        MockURLProtocol.responseData = """
+        {"owner_token":"tok-abc123"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        _ = try await client.owner.registerOwner(deviceOwnerId: "device-1", appId: "test-app", hcaptchaToken: "captcha-tok")
+
+        let body = lastCapturedBody()
+        #expect(body?["hcaptcha_token"] as? String == "captcha-tok")
+    }
+
+    @Test func ownerMigrate() async throws {
+        MockURLProtocol.responseData = """
+        {"success":true,"message":"Migrated successfully"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.owner.migrateOwnerToUser(deviceOwnerId: "device-1", appId: "test-app")
+        #expect(response.success)
+        #expect(response.message == "Migrated successfully")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/owner/migrate"))
+        #expect(routeExists(method: "POST", path: "/owner/migrate"))
+
+        let body = lastCapturedBody()
+        #expect(body?["device_owner_id"] as? String == "device-1")
+        #expect(body?["app_id"] as? String == "test-app")
+    }
+
+    // MARK: - Settings Service
+
+    @Test func getSettings() async throws {
+        MockURLProtocol.responseData = """
+        {"app_id":"test-app","settings":{"theme":"dark"}}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.settings.getSettings()
+        #expect(response.appId == "test-app")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/settings"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/settings"))
+    }
+
+    @Test func updateSettings() async throws {
+        MockURLProtocol.responseData = """
+        {"app_id":"test-app","settings":{"theme":"light"}}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let body: [String: AnyCodable] = ["theme": AnyCodable("light")]
+        _ = try await client.settings.updateSettings(body)
+        #expect(lastCapturedMethod() == "PUT")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/settings"))
+        #expect(routeExists(method: "PUT", path: "/apps/test-app/settings"))
+    }
+
+    @Test func getConfig() async throws {
+        MockURLProtocol.responseData = """
+        {"app_id":"test-app","config":{"feature_flags":{}}}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.settings.getConfig()
+        #expect(response.appId == "test-app")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/config"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/config"))
+    }
+
+    @Test func updateConfig() async throws {
+        MockURLProtocol.responseData = """
+        {"app_id":"test-app","config":{"feature_flags":{"new_ui":true}}}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let body: [String: AnyCodable] = ["feature_flags": AnyCodable(["new_ui": AnyCodable(true)])]
+        _ = try await client.settings.updateConfig(body)
+        #expect(lastCapturedMethod() == "PUT")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/config"))
+        #expect(routeExists(method: "PUT", path: "/apps/test-app/config"))
+    }
+
+    @Test func getIntegrationSecret() async throws {
+        MockURLProtocol.responseData = """
+        {"integration_id":"intg-1","secret":{"api_key":"***"},"success":true}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.settings.getIntegrationSecret(integrationId: "intg-1")
+        #expect(response.integrationId == "intg-1")
+        #expect(response.success == true)
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/integrations/intg-1/secret"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/integrations/intg-1/secret"))
+    }
+
+    @Test func uploadIntegrationSecret() async throws {
+        MockURLProtocol.responseData = """
+        {"integration_id":"intg-1","success":true}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let body: [String: AnyCodable] = ["api_key": AnyCodable("sk-test-123")]
+        _ = try await client.settings.uploadIntegrationSecret(integrationId: "intg-1", body: body)
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/integrations/intg-1/secret"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/integrations/intg-1/secret"))
     }
 
     // MARK: - Response Decoding Validation (Golden fixture shape tests)

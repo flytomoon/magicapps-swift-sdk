@@ -54,76 +54,13 @@ public struct AnyCodable: Codable, @unchecked Sendable {
     }
 }
 
-/// Request body for creating a template.
-public struct CreateTemplateRequest: Encodable {
-    public let name: String
-    public let description: String?
-    public let content: [String: AnyCodable]?
-
-    public init(name: String, description: String? = nil, content: [String: AnyCodable]? = nil) {
-        self.name = name
-        self.description = description
-        self.content = content
-    }
-}
-
-/// Request body for updating a template.
-public struct UpdateTemplateRequest: Encodable {
-    public let name: String?
-    public let description: String?
-    public let content: [String: AnyCodable]?
-
-    public init(name: String? = nil, description: String? = nil, content: [String: AnyCodable]? = nil) {
-        self.name = name
-        self.description = description
-        self.content = content
-    }
-}
-
-/// Paginated list response for templates.
-public struct TemplateListResponse: Decodable {
-    public let templates: [Template]?
-    public let items: [Template]?
-    public let nextToken: String?
-    public let count: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case templates, items
-        case nextToken = "next_token"
-        case count
-    }
-
-    /// Convenience accessor that returns templates from whichever field the API uses.
-    public var allTemplates: [Template] {
-        return templates ?? items ?? []
-    }
-}
-
-/// Registry app in the catalog.
-public struct RegistryApp: Decodable {
-    public let appId: String
-    public let name: String
-    public let slug: String
-    public let description: String?
-    public let iconUrl: String?
-    public let status: String?
-    public let visibility: String?
-
-    enum CodingKeys: String, CodingKey {
-        case appId = "app_id"
-        case name, slug, description
-        case iconUrl = "icon_url"
-        case status, visibility
-    }
-}
-
-/// Response from the registry apps endpoint.
-public struct RegistryAppsResponse: Decodable {
-    public let apps: [RegistryApp]?
-    public let items: [RegistryApp]?
+/// Response from the catalog endpoint.
+public struct CatalogResponse: Decodable {
+    public let apps: [App]?
+    public let items: [App]?
 
     /// Convenience accessor that returns apps from whichever field the API uses.
-    public var allApps: [RegistryApp] {
+    public var allApps: [App] {
         return apps ?? items ?? []
     }
 }
@@ -131,8 +68,8 @@ public struct RegistryAppsResponse: Decodable {
 // MARK: - Templates Service (All Platforms)
 
 /// Templates service module.
-/// Provides CRUD operations for templates within a tenant's app,
-/// plus read access to the registry catalog.
+/// Provides read-only access to a specific template by ID
+/// and the app catalog endpoint.
 /// Available on all platforms.
 public class TemplatesService: ServiceModule {
     public let name = "templates"
@@ -142,20 +79,6 @@ public class TemplatesService: ServiceModule {
 
     init(http: SdkHttpClient) {
         self.http = http
-    }
-
-    // MARK: - List Templates
-
-    /// List templates for the current app.
-    ///
-    /// - Parameter nextToken: Optional pagination token for the next page.
-    /// - Returns: A paginated list of templates.
-    public func list(nextToken: String? = nil) async throws -> TemplateListResponse {
-        var query: [String: String]? = nil
-        if let nextToken {
-            query = ["next_token": nextToken]
-        }
-        return try await http.get("/apps/\(http.appId)/templates", query: query, authMode: .none)
     }
 
     // MARK: - Get Template
@@ -168,49 +91,12 @@ public class TemplatesService: ServiceModule {
         return try await http.get("/apps/\(http.appId)/templates/\(templateId)", authMode: .none)
     }
 
-    // MARK: - Create Template
+    // MARK: - Catalog
 
-    /// Create a new template for the current app. Requires authentication.
+    /// Fetch the app catalog for the current app.
     ///
-    /// - Parameter request: The template creation request.
-    /// - Returns: The created template.
-    public func create(_ request: CreateTemplateRequest) async throws -> Template {
-        return try await http.post("/apps/\(http.appId)/templates", body: request)
-    }
-
-    /// Convenience: create a template with name and optional description.
-    public func create(name: String, description: String? = nil, content: [String: AnyCodable]? = nil) async throws -> Template {
-        let request = CreateTemplateRequest(name: name, description: description, content: content)
-        return try await create(request)
-    }
-
-    // MARK: - Update Template
-
-    /// Update an existing template. Requires authentication.
-    ///
-    /// - Parameters:
-    ///   - templateId: The ID of the template to update.
-    ///   - request: The update request with fields to change.
-    /// - Returns: The updated template.
-    public func update(templateId: String, _ request: UpdateTemplateRequest) async throws -> Template {
-        return try await http.put("/apps/\(http.appId)/templates/\(templateId)", body: request)
-    }
-
-    // MARK: - Delete Template
-
-    /// Delete a template. Requires authentication.
-    ///
-    /// - Parameter templateId: The ID of the template to delete.
-    public func delete(templateId: String) async throws {
-        let _: EmptyResponse = try await http.delete("/apps/\(http.appId)/templates/\(templateId)")
-    }
-
-    // MARK: - Registry Catalog
-
-    /// Browse the registry catalog of well-known apps and templates.
-    ///
-    /// - Returns: A list of registry apps.
-    public func browseRegistry() async throws -> RegistryAppsResponse {
-        return try await http.get("/registry/apps", authMode: .none)
+    /// - Returns: The catalog response with available apps and integrations.
+    public func getCatalog() async throws -> CatalogResponse {
+        return try await http.get("/apps/\(http.appId)/catalog", authMode: .none)
     }
 }

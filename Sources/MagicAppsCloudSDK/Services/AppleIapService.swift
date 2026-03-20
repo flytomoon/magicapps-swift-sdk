@@ -158,7 +158,7 @@ public class AppleIapService: ServiceModule {
     /// Fetch the current client commerce configuration.
     /// Includes purchase modes, UX copy, and product information.
     public func getClientConfig() async throws -> ClientCommerceConfig {
-        return try await http.get("/client-config", authMode: .none)
+        return try await http.get("/apps/\(http.appId)/client-config", authMode: .none)
     }
 
     /// Check the current entitlement status for a specific product.
