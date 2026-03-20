@@ -58,7 +58,7 @@ print(appInfo.name)
 let devices = try await client.devices.getAll()
 
 // Get templates
-let templateList = try await client.templates.list()
+let catalog = try await client.templates.getCatalog()
 ```
 
 ## Services
@@ -140,16 +140,11 @@ func uploadIntegrationSecret(integrationId: String, body: [String: AnyCodable]) 
 
 ### Templates (`client.templates`)
 
-Template CRUD and registry catalog browsing. Available on all platforms.
+Read-only access to templates and the app catalog. Available on all platforms.
 
 ```swift
-func list(nextToken: String? = nil) async throws -> TemplateListResponse
 func get(templateId: String) async throws -> Template
-func create(_ request: CreateTemplateRequest) async throws -> Template
-func create(name: String, description: String? = nil, content: [String: AnyCodable]? = nil) async throws -> Template
-func update(templateId: String, _ request: UpdateTemplateRequest) async throws -> Template
-func delete(templateId: String) async throws
-func browseRegistry() async throws -> RegistryAppsResponse
+func getCatalog() async throws -> CatalogResponse
 ```
 
 ### Devices (`client.devices`)
