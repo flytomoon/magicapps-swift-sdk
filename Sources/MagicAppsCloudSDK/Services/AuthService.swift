@@ -2,30 +2,6 @@ import Foundation
 
 // MARK: - Common Auth Types
 
-public struct LoginRequest: Encodable {
-    public let email: String
-    public let password: String
-}
-
-public struct LoginResponse: Decodable {
-    public let accessToken: String
-    public let refreshToken: String?
-    public let idToken: String?
-    public let expiresIn: Int?
-}
-
-public struct RegisterRequest: Encodable {
-    public let email: String
-    public let password: String
-    public let name: String?
-}
-
-public struct RegisterResponse: Decodable {
-    public let userId: String
-    public let email: String
-    public let confirmed: Bool
-}
-
 public struct TokenRefreshRequest: Encodable {
     public let refresh_token: String
 }
@@ -109,26 +85,6 @@ public struct PasskeyAuthVerifyResponse: Decodable {
     public let refreshToken: String?
 }
 
-// MARK: - Email Magic Link Types
-
-public struct EmailMagicLinkRequest: Encodable {
-    public let email: String
-}
-
-public struct EmailMagicLinkResponse: Decodable {
-    public let success: Bool
-    public let message: String
-}
-
-public struct EmailMagicLinkVerifyRequest: Encodable {
-    public let token: String
-}
-
-public struct EmailMagicLinkVerifyResponse: Decodable {
-    public let accessToken: String
-    public let refreshToken: String?
-}
-
 // MARK: - Apple Sign-In Types
 
 public struct AppleExchangeRequest: Encodable {
@@ -159,8 +115,7 @@ struct EmptyBody: Encodable {}
 // MARK: - Auth Service (All Platforms)
 
 /// Core authentication service module.
-/// Provides email/password auth, passkeys, email magic links,
-/// token refresh, and identity linking.
+/// Provides passkey auth, token refresh, and identity linking.
 /// Available on all platforms.
 public class AuthService: ServiceModule {
     public let name = "auth"
@@ -170,26 +125,6 @@ public class AuthService: ServiceModule {
 
     init(http: SdkHttpClient) {
         self.http = http
-    }
-
-    /// Register a new user account.
-    public func register(email: String, password: String, name: String? = nil) async throws -> RegisterResponse {
-        let body = RegisterRequest(email: email, password: password, name: name)
-        return try await http.post("/auth/register", body: body, authMode: .none)
-    }
-
-    /// Authenticate with email and password.
-    public func login(email: String, password: String) async throws -> LoginResponse {
-        let body = LoginRequest(email: email, password: password)
-        let response: LoginResponse = try await http.post("/auth/login", body: body, authMode: .none)
-        await http.tokenManager.setTokens(accessToken: response.accessToken, refreshToken: response.refreshToken)
-        return response
-    }
-
-    /// Log out and clear stored tokens.
-    public func logout() async throws {
-        let _: EmptyResponse = try await http.post("/auth/logout", authMode: .bearer)
-        await http.tokenManager.clearTokens()
     }
 
     // MARK: - Token Refresh
@@ -236,21 +171,6 @@ public class AuthService: ServiceModule {
         return response
     }
 
-    // MARK: - Email Magic Link
-
-    /// Request an email magic link for passwordless sign-in.
-    public func requestEmailMagicLink(email: String) async throws -> EmailMagicLinkResponse {
-        let body = EmailMagicLinkRequest(email: email)
-        return try await http.post("/auth/client/email/request", body: body, authMode: .none)
-    }
-
-    /// Verify an email magic link token to complete sign-in.
-    public func verifyEmailMagicLink(token: String) async throws -> EmailMagicLinkVerifyResponse {
-        let body = EmailMagicLinkVerifyRequest(token: token)
-        let response: EmailMagicLinkVerifyResponse = try await http.post("/auth/client/email/verify", body: body, authMode: .none)
-        await http.tokenManager.setTokens(accessToken: response.accessToken, refreshToken: response.refreshToken)
-        return response
-    }
 }
 
 // MARK: - Apple Sign-In Service (iOS Only)

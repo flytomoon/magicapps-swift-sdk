@@ -57,6 +57,10 @@ public class MagicAppsClient {
     public let endpoints: EndpointsService
     /// Lookup tables service (all platforms).
     public let lookupTables: LookupTablesService
+    /// Owner registration service (all platforms).
+    public let owner: OwnerService
+    /// Settings and config service (all platforms).
+    public let settings: SettingsService
 
     public init(config: SdkConfig) {
         #if os(iOS) || os(tvOS) || os(watchOS)
@@ -79,6 +83,8 @@ public class MagicAppsClient {
         self.devices = DevicesService(http: http)
         self.endpoints = EndpointsService(http: http)
         self.lookupTables = LookupTablesService(http: http)
+        self.owner = OwnerService(http: http)
+        self.settings = SettingsService(http: http)
 
         registry.register(auth)
         registry.register(appleAuth)
@@ -88,6 +94,8 @@ public class MagicAppsClient {
         registry.register(devices)
         registry.register(endpoints)
         registry.register(lookupTables)
+        registry.register(owner)
+        registry.register(settings)
     }
 
     /// Health check - verifies connectivity to the MagicApps API.
