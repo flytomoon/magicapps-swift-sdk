@@ -190,18 +190,6 @@ let FIXTURE_MODERATION = """
 {"id":"ai_resp_mod123","provider":"openai","model":"text-moderation-latest","choices":[],"usage":{"input_tokens":5,"output_tokens":0,"total_tokens":5,"estimated_cost_usd":0.0},"results":[{"flagged":false,"categories":{"hate":false,"sexual":false,"violence":false},"category_scores":{"hate":0.001,"sexual":0.0002,"violence":0.0001}}]}
 """
 
-/// Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 457-474)
-/// Returns { summaries: AiUsageSummaryRecord[] }
-let FIXTURE_AI_USAGE_SUMMARY = """
-{"summaries":[{"app_id":"test-app","period":"MONTHLY#2026-03","total_requests":150,"total_input_tokens":50000,"total_output_tokens":25000,"total_estimated_cost_usd":1.25,"updated_at":1741900000}]}
-"""
-
-/// Source: lambda/ai_proxy/index.js handleGetUsage (~line 436-454)
-/// Returns { usage: AiUsageRecord[], count: N }
-let FIXTURE_AI_USAGE = """
-{"usage":[{"usage_id":"usage-001","app_id":"test-app","provider_id":"openai","model_id":"gpt-4","request_type":"chat","input_tokens":10,"output_tokens":5,"total_tokens":15,"latency_ms":250,"status":"success","created_at":1741900000,"expires_at":1749676000}],"count":1}
-"""
-
 /// Source: lambda/devices/index.js (~line 22-26)
 /// Returns { items: Device[] }
 let FIXTURE_DEVICES = """
@@ -395,36 +383,6 @@ struct ContractTests {
         #expect(lastCapturedMethod() == "POST")
         #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/moderations"))
         #expect(routeExists(method: "POST", path: "/apps/test-app/ai/moderations"))
-    }
-
-    @Test func getUsageSummary() async throws {
-        // Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 457-474)
-        // Returns { summaries: AiUsageSummaryRecord[] }
-        MockURLProtocol.responseData = FIXTURE_AI_USAGE_SUMMARY.data(using: .utf8)!
-
-        let client = makeClient()
-        let summary = try await client.ai.getUsageSummary()
-        #expect(summary.summaries?.count == 1)
-        #expect(summary.summaries?[0].totalRequests == 150)
-        #expect(summary.totalRequests == 150)
-        #expect(lastCapturedMethod() == "GET")
-        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/usage/summary"))
-        #expect(routeExists(method: "GET", path: "/apps/test-app/ai/usage/summary"))
-    }
-
-    @Test func getUsage() async throws {
-        // Source: lambda/ai_proxy/index.js handleGetUsage (~line 436-454)
-        // Returns { usage: AiUsageRecord[], count: N }
-        MockURLProtocol.responseData = FIXTURE_AI_USAGE.data(using: .utf8)!
-
-        let client = makeClient()
-        let response = try await client.ai.getUsage()
-        #expect(response.usage.count == 1)
-        #expect(response.usage[0].usageId == "usage-001")
-        #expect(response.count == 1)
-        #expect(lastCapturedMethod() == "GET")
-        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/usage"))
-        #expect(routeExists(method: "GET", path: "/apps/test-app/ai/usage"))
     }
 
     // MARK: - Devices Service
@@ -850,26 +808,6 @@ struct ContractTests {
         #expect(event.text == "hello")
         #expect(event.keywords == ["greeting"])
         #expect(event.empty == false)
-    }
-
-    @Test func aiUsageSummaryDecodesFromRealShape() throws {
-        // Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 457-474)
-        let json = FIXTURE_AI_USAGE_SUMMARY.data(using: .utf8)!
-        let summary = try JSONDecoder().decode(AiUsageSummary.self, from: json)
-        #expect(summary.summaries?.count == 1)
-        #expect(summary.summaries?[0].period == "MONTHLY#2026-03")
-        #expect(summary.summaries?[0].totalRequests == 150)
-        #expect(summary.totalRequests == 150)
-    }
-
-    @Test func aiUsageDecodesFromRealShape() throws {
-        // Source: lambda/ai_proxy/index.js handleGetUsage (~line 436-454)
-        let json = FIXTURE_AI_USAGE.data(using: .utf8)!
-        let response = try JSONDecoder().decode(AiUsageResponse.self, from: json)
-        #expect(response.usage.count == 1)
-        #expect(response.usage[0].usageId == "usage-001")
-        #expect(response.usage[0].providerId == "openai")
-        #expect(response.count == 1)
     }
 
     // MARK: - HMAC Helpers

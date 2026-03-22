@@ -200,9 +200,6 @@ func generateImage(prompt: String, size: String? = nil) async throws -> ImageGen
 func createModeration(_ request: ModerationRequest) async throws -> ModerationResponse
 func moderate(text: String) async throws -> ModerationResponse
 
-// Usage
-func getUsage(limit: Int? = nil, startDate: String? = nil, endDate: String? = nil) async throws -> AiUsageResponse
-func getUsageSummary() async throws -> AiUsageSummary
 ```
 
 ### Apple IAP (`client.appleIap`) -- iOS only

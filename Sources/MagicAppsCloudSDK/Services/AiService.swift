@@ -223,86 +223,6 @@ public struct ModerationResponse: Decodable {
     public let results: [ModerationResult]
 }
 
-// MARK: - AI Usage Types
-
-/// Response wrapper from GET /apps/{app_id}/ai/usage/summary.
-/// Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 457-474)
-/// Response shape: { summaries: AiUsageSummaryRecord[] }
-public struct AiUsageSummary: Decodable {
-    public let summaries: [AiUsageSummaryRecord]?
-
-    /// Convenience: get the total requests across all summary records.
-    public var totalRequests: Int? {
-        summaries?.reduce(0) { $0 + ($1.totalRequests ?? 0) }
-    }
-}
-
-/// A single period summary record from the AI usage summary endpoint.
-/// Source: lambda/ai_proxy/index.js handleGetUsageSummary (~line 473)
-/// Fields from DynamoDB AI_USAGE_SUMMARY_TABLE.
-public struct AiUsageSummaryRecord: Decodable {
-    public let appId: String?
-    public let period: String?
-    public let totalRequests: Int?
-    public let totalInputTokens: Int?
-    public let totalOutputTokens: Int?
-    public let totalEstimatedCostUsd: Double?
-    public let updatedAt: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case appId = "app_id"
-        case period
-        case totalRequests = "total_requests"
-        case totalInputTokens = "total_input_tokens"
-        case totalOutputTokens = "total_output_tokens"
-        case totalEstimatedCostUsd = "total_estimated_cost_usd"
-        case updatedAt = "updated_at"
-    }
-}
-
-// MARK: - AI Detailed Usage Types
-
-/// A single AI usage record (per-request detail).
-public struct AiUsageRecord: Decodable {
-    public let usageId: String
-    public let appId: String
-    public let providerId: String
-    public let modelId: String
-    public let requestType: String
-    public let inputTokens: Int
-    public let outputTokens: Int
-    public let totalTokens: Int
-    public let latencyMs: Int
-    public let status: String
-    public let createdAt: Double
-    public let expiresAt: Double
-    public let errorCode: String?
-    public let userId: String?
-
-    enum CodingKeys: String, CodingKey {
-        case usageId = "usage_id"
-        case appId = "app_id"
-        case providerId = "provider_id"
-        case modelId = "model_id"
-        case requestType = "request_type"
-        case inputTokens = "input_tokens"
-        case outputTokens = "output_tokens"
-        case totalTokens = "total_tokens"
-        case latencyMs = "latency_ms"
-        case status
-        case createdAt = "created_at"
-        case expiresAt = "expires_at"
-        case errorCode = "error_code"
-        case userId = "user_id"
-    }
-}
-
-/// Response from the detailed AI usage endpoint.
-public struct AiUsageResponse: Decodable {
-    public let usage: [AiUsageRecord]
-    public let count: Int
-}
-
 // MARK: - AI Service (All Platforms)
 
 /// AI proxy service module.
@@ -389,27 +309,4 @@ public class AiService: ServiceModule {
         return try await createModeration(request)
     }
 
-    // MARK: - Usage
-
-    /// Get detailed per-request AI usage records for the current app.
-    ///
-    /// - Parameters:
-    ///   - limit: Maximum number of records to return (1-100, default 50).
-    ///   - startDate: Start of date range filter (ISO 8601 string).
-    ///   - endDate: End of date range filter (ISO 8601 string).
-    /// - Returns: A response containing individual usage records and count.
-    public func getUsage(limit: Int? = nil, startDate: String? = nil, endDate: String? = nil) async throws -> AiUsageResponse {
-        var query: [String: String] = [:]
-        if let limit { query["limit"] = String(limit) }
-        if let startDate { query["start_date"] = startDate }
-        if let endDate { query["end_date"] = endDate }
-        return try await http.get("/apps/\(http.appId)/ai/usage", query: query.isEmpty ? nil : query)
-    }
-
-    /// Get AI usage summary for the current app.
-    ///
-    /// - Returns: Usage summary with request counts, token usage, and cost breakdown.
-    public func getUsageSummary() async throws -> AiUsageSummary {
-        return try await http.get("/apps/\(http.appId)/ai/usage/summary")
-    }
 }
