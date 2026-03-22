@@ -85,6 +85,38 @@ public struct PasskeyAuthVerifyResponse: Decodable {
     public let refreshToken: String?
 }
 
+// MARK: - Email Magic Link Types
+
+/// Request body for requesting an email magic link.
+public struct EmailMagicLinkRequest: Encodable {
+    public let email: String
+
+    public init(email: String) {
+        self.email = email
+    }
+}
+
+/// Response from requesting an email magic link.
+public struct EmailMagicLinkResponse: Decodable {
+    public let success: Bool
+    public let message: String
+}
+
+/// Request body for verifying an email magic link token.
+public struct EmailMagicLinkVerifyRequest: Encodable {
+    public let token: String
+
+    public init(token: String) {
+        self.token = token
+    }
+}
+
+/// Response from verifying an email magic link token.
+public struct EmailMagicLinkVerifyResponse: Decodable {
+    public let accessToken: String
+    public let refreshToken: String?
+}
+
 // MARK: - Apple Sign-In Types
 
 public struct AppleExchangeRequest: Encodable {
@@ -115,7 +147,7 @@ struct EmptyBody: Encodable {}
 // MARK: - Auth Service (All Platforms)
 
 /// Core authentication service module.
-/// Provides passkey auth, token refresh, and identity linking.
+/// Provides passkey auth, email magic links, token refresh, and identity linking.
 /// Available on all platforms.
 public class AuthService: ServiceModule {
     public let name = "auth"
@@ -167,6 +199,30 @@ public class AuthService: ServiceModule {
     /// Complete passkey authentication by verifying the assertion.
     public func verifyPasskeyAuth(_ assertion: PasskeyAuthVerifyRequest) async throws -> PasskeyAuthVerifyResponse {
         let response: PasskeyAuthVerifyResponse = try await http.post("/auth/client/passkey/authenticate/verify", body: assertion, authMode: .none)
+        await http.tokenManager.setTokens(accessToken: response.accessToken, refreshToken: response.refreshToken)
+        return response
+    }
+
+    // MARK: - Email Magic Link
+
+    /// Request an email magic link for passwordless sign-in.
+    ///
+    /// - Parameter email: The email address to send the magic link to.
+    /// - Returns: A response indicating whether the magic link was sent.
+    public func requestEmailMagicLink(email: String) async throws -> EmailMagicLinkResponse {
+        let body = EmailMagicLinkRequest(email: email)
+        return try await http.post("/auth/client/email/request", body: body, authMode: .none)
+    }
+
+    /// Verify an email magic link token to complete sign-in.
+    ///
+    /// On success, tokens are automatically stored via the token manager.
+    ///
+    /// - Parameter token: The verification token from the magic link.
+    /// - Returns: A response containing access and refresh tokens.
+    public func verifyEmailMagicLink(token: String) async throws -> EmailMagicLinkVerifyResponse {
+        let body = EmailMagicLinkVerifyRequest(token: token)
+        let response: EmailMagicLinkVerifyResponse = try await http.post("/auth/client/email/verify", body: body, authMode: .none)
         await http.tokenManager.setTokens(accessToken: response.accessToken, refreshToken: response.refreshToken)
         return response
     }
