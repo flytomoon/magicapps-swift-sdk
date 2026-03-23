@@ -19,7 +19,7 @@ Add the dependency in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/magicapps/magicapps-infra", from: "0.3.0")
+    .package(url: "https://github.com/flytomoon/magicapps-swift-sdk", from: "0.3.0")
 ]
 ```
 
