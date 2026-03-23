@@ -75,9 +75,164 @@ public struct AIProvider: Codable, Sendable {
     }
 }
 
+public struct AIConversation: Codable, Sendable {
+    public let conversationId: String?
+    public let title: String?
+    public let messageCount: Int?
+    public let createdAt: Int?
+    public let updatedAt: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case conversationId = "conversation_id"
+        case title
+        case messageCount = "message_count"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct AIConversationDetail: Codable, Sendable {
+    public let conversationId: String?
+    public let title: String?
+    public let messageCount: Int?
+    public let createdAt: Int?
+    public let updatedAt: Int?
+    public let systemPrompt: String?
+    public let metadata: [String: AnyCodable]?
+    public let messages: [Int]?
+
+    enum CodingKeys: String, CodingKey {
+        case conversationId = "conversation_id"
+        case title
+        case messageCount = "message_count"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case systemPrompt = "system_prompt"
+        case metadata
+        case messages
+    }
+}
+
+public struct AITool: Codable, Sendable {
+    public let toolId: String?
+    public let appId: String?
+    public let name: String?
+    public let description: String?
+    public let inputSchema: [String: AnyCodable]?
+    public let endpointUrl: String?
+    public let status: String?
+    public let createdAt: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case toolId = "tool_id"
+        case appId = "app_id"
+        case name
+        case description
+        case inputSchema = "input_schema"
+        case endpointUrl = "endpoint_url"
+        case status
+        case createdAt = "created_at"
+    }
+}
+
 public struct ErrorResponse: Codable, Sendable {
     public let error: String
     public let message: String
+}
+
+/// Full user profile (returned to the profile owner)
+public struct UserProfile: Codable, Sendable {
+    public let userId: String?
+    public let appId: String?
+    public let displayName: String?
+    public let avatarUrl: String?
+    public let bio: String?
+    public let preferences: [String: AnyCodable]?
+    public let customFields: [String: AnyCodable]?
+    /// Unix timestamp in milliseconds
+    public let createdAt: Double?
+    /// Unix timestamp in milliseconds
+    public let updatedAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case appId = "app_id"
+        case displayName = "display_name"
+        case avatarUrl = "avatar_url"
+        case bio
+        case preferences
+        case customFields = "custom_fields"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+/// Public user profile (visible to other users)
+public struct UserProfilePublic: Codable, Sendable {
+    public let userId: String?
+    public let displayName: String?
+    public let avatarUrl: String?
+    public let bio: String?
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case displayName = "display_name"
+        case avatarUrl = "avatar_url"
+        case bio
+    }
+}
+
+public struct Webhook: Codable, Sendable {
+    public let webhookId: String?
+    public let tenantId: String?
+    public let appId: String?
+    public let url: String?
+    public let events: [String]?
+    /// Masked in list/detail responses; shown in full only on creation
+    public let secret: String?
+    public let description: String?
+    public let status: String?
+    public let createdAt: Double?
+    public let updatedAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case webhookId = "webhook_id"
+        case tenantId = "tenant_id"
+        case appId = "app_id"
+        case url
+        case events
+        case secret
+        case description
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct WebhookDelivery: Codable, Sendable {
+    public let deliveryId: String?
+    public let webhookId: String?
+    public let eventType: String?
+    public let payload: String?
+    public let success: Bool?
+    public let statusCode: Int?
+    public let responseBody: String?
+    public let latencyMs: Int?
+    public let error: String?
+    public let createdAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case deliveryId = "delivery_id"
+        case webhookId = "webhook_id"
+        case eventType = "event_type"
+        case payload
+        case success
+        case statusCode = "status_code"
+        case responseBody = "response_body"
+        case latencyMs = "latency_ms"
+        case error
+        case createdAt = "created_at"
+    }
 }
 
 public struct LookupTableSummary: Codable, Sendable {
