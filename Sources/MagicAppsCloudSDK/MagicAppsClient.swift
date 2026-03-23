@@ -61,6 +61,16 @@ public class MagicAppsClient {
     public let owner: OwnerService
     /// Settings and config service (all platforms).
     public let settings: SettingsService
+    /// User profile service (all platforms).
+    public let profile: ProfileService
+    /// Account management service (all platforms).
+    public let account: AccountService
+    /// File storage service (all platforms).
+    public let files: FileStorageService
+    /// AI conversation service (all platforms).
+    public let conversations: ConversationService
+    /// Push notification registration service (all platforms).
+    public let notifications: NotificationService
 
     public init(config: SdkConfig) {
         #if os(iOS) || os(tvOS) || os(watchOS)
@@ -85,6 +95,11 @@ public class MagicAppsClient {
         self.lookupTables = LookupTablesService(http: http)
         self.owner = OwnerService(http: http)
         self.settings = SettingsService(http: http)
+        self.profile = ProfileService(http: http)
+        self.account = AccountService(http: http)
+        self.files = FileStorageService(http: http)
+        self.conversations = ConversationService(http: http)
+        self.notifications = NotificationService(http: http)
 
         registry.register(auth)
         registry.register(appleAuth)
@@ -96,6 +111,11 @@ public class MagicAppsClient {
         registry.register(lookupTables)
         registry.register(owner)
         registry.register(settings)
+        registry.register(profile)
+        registry.register(account)
+        registry.register(files)
+        registry.register(conversations)
+        registry.register(notifications)
     }
 
     /// Health check - verifies connectivity to the MagicApps API.

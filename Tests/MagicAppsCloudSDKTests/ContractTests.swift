@@ -97,6 +97,26 @@ let API_ROUTES: [(method: String, path: String)] = [
     ("PUT", "/apps/{app_id}/config"),
     ("GET", "/apps/{app_id}/integrations/{integration_id}/secret"),
     ("POST", "/apps/{app_id}/integrations/{integration_id}/secret"),
+    // Profile
+    ("GET", "/apps/{app_id}/profile"),
+    ("PUT", "/apps/{app_id}/profile"),
+    ("GET", "/apps/{app_id}/profile/{user_id}"),
+    // Account
+    ("DELETE", "/apps/{app_id}/account"),
+    // File Storage
+    ("POST", "/apps/{app_id}/files/upload-url"),
+    ("GET", "/apps/{app_id}/files"),
+    ("GET", "/apps/{app_id}/files/{file_id}"),
+    ("DELETE", "/apps/{app_id}/files/{file_id}"),
+    // AI Conversations
+    ("POST", "/apps/{app_id}/ai/conversations"),
+    ("GET", "/apps/{app_id}/ai/conversations"),
+    ("GET", "/apps/{app_id}/ai/conversations/{conversation_id}"),
+    ("POST", "/apps/{app_id}/ai/conversations/{conversation_id}/messages"),
+    ("DELETE", "/apps/{app_id}/ai/conversations/{conversation_id}"),
+    // Notifications
+    ("POST", "/apps/{app_id}/notifications/register"),
+    ("DELETE", "/apps/{app_id}/notifications/register/{device_id}"),
 ]
 
 /// Check whether a concrete path + method matches any API Gateway route.
@@ -110,6 +130,10 @@ func routeExists(method: String, path: String) -> Bool {
             .replacingOccurrences(of: "{lookup_table_id}", with: "lt-1")
             .replacingOccurrences(of: "{chunk_index}", with: "0")
             .replacingOccurrences(of: "{integration_id}", with: "intg-1")
+            .replacingOccurrences(of: "{user_id}", with: "user-1")
+            .replacingOccurrences(of: "{file_id}", with: "file-1")
+            .replacingOccurrences(of: "{conversation_id}", with: "conv-1")
+            .replacingOccurrences(of: "{device_id}", with: "device-1")
         let methodMatch = route.method == "ANY" || route.method == method
         return methodMatch && resolved == path
     }
@@ -857,5 +881,323 @@ struct ContractTests {
         let h1 = generateHmacSignature(slug: "s", body: "b", secret: "k", timestampSec: 100)
         let h2 = generateHmacSignature(slug: "s", body: "b", secret: "k", timestampSec: 100)
         #expect(h1.signature == h2.signature)
+    }
+
+    // MARK: - Profile Service
+
+    @Test func profileGet() async throws {
+        MockURLProtocol.responseData = """
+        {"user_id":"u-1","app_id":"test-app","display_name":"Alice","avatar_url":"https://example.com/avatar.png","bio":"Hello","created_at":1700000000,"updated_at":1700000001}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let profile = try await client.profile.getProfile()
+        #expect(profile.userId == "u-1")
+        #expect(profile.displayName == "Alice")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/profile"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/profile"))
+    }
+
+    @Test func profileUpdate() async throws {
+        MockURLProtocol.responseData = """
+        {"user_id":"u-1","app_id":"test-app","display_name":"Bob","bio":"Updated bio","created_at":1700000000,"updated_at":1700000002}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let profile = try await client.profile.updateProfile(displayName: "Bob", bio: "Updated bio")
+        #expect(profile.displayName == "Bob")
+        #expect(lastCapturedMethod() == "PUT")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/profile"))
+        #expect(routeExists(method: "PUT", path: "/apps/test-app/profile"))
+
+        let body = lastCapturedBody()
+        #expect(body?["display_name"] as? String == "Bob")
+        #expect(body?["bio"] as? String == "Updated bio")
+    }
+
+    @Test func profileGetPublic() async throws {
+        MockURLProtocol.responseData = """
+        {"user_id":"user-1","display_name":"Charlie","avatar_url":"https://example.com/charlie.png","bio":"Public bio"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let profile = try await client.profile.getPublicProfile(userId: "user-1")
+        #expect(profile.userId == "user-1")
+        #expect(profile.displayName == "Charlie")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/profile/user-1"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/profile/user-1"))
+    }
+
+    // MARK: - Account Service
+
+    @Test func accountDelete() async throws {
+        MockURLProtocol.responseData = """
+        {"success":true,"message":"Account deleted"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.account.deleteAccount(reason: "No longer needed")
+        #expect(response.success == true)
+        #expect(lastCapturedMethod() == "DELETE")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/account"))
+        #expect(routeExists(method: "DELETE", path: "/apps/test-app/account"))
+
+        let body = lastCapturedBody()
+        #expect(body?["reason"] as? String == "No longer needed")
+    }
+
+    @Test func accountDeleteWithoutReason() async throws {
+        MockURLProtocol.responseData = """
+        {"success":true,"message":"Account deleted"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        _ = try await client.account.deleteAccount()
+        #expect(lastCapturedMethod() == "DELETE")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/account"))
+    }
+
+    // MARK: - File Storage Service
+
+    @Test func filesGetUploadUrl() async throws {
+        MockURLProtocol.responseData = """
+        {"upload_url":"https://s3.example.com/upload","file_id":"file-1","key":"uploads/file-1.jpg","expires_in":3600}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.files.getUploadUrl(filename: "photo.jpg", contentType: "image/jpeg")
+        #expect(response.uploadUrl == "https://s3.example.com/upload")
+        #expect(response.fileId == "file-1")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/files/upload-url"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/files/upload-url"))
+
+        let body = lastCapturedBody()
+        #expect(body?["filename"] as? String == "photo.jpg")
+        #expect(body?["content_type"] as? String == "image/jpeg")
+    }
+
+    @Test func filesListFiles() async throws {
+        MockURLProtocol.responseData = """
+        {"items":[{"file_id":"file-1","filename":"photo.jpg","content_type":"image/jpeg","size":1024}]}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.files.listFiles()
+        #expect(response.allFiles.count == 1)
+        #expect(response.allFiles[0].fileId == "file-1")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/files"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/files"))
+    }
+
+    @Test func filesGetFile() async throws {
+        MockURLProtocol.responseData = """
+        {"file_id":"file-1","filename":"photo.jpg","content_type":"image/jpeg","size":1024,"url":"https://s3.example.com/photo.jpg"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let file = try await client.files.getFile(fileId: "file-1")
+        #expect(file.fileId == "file-1")
+        #expect(file.filename == "photo.jpg")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/files/file-1"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/files/file-1"))
+    }
+
+    @Test func filesDeleteFile() async throws {
+        MockURLProtocol.responseData = """
+        {"success":true,"message":"File deleted"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.files.deleteFile(fileId: "file-1")
+        #expect(response.success == true)
+        #expect(lastCapturedMethod() == "DELETE")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/files/file-1"))
+        #expect(routeExists(method: "DELETE", path: "/apps/test-app/files/file-1"))
+    }
+
+    // MARK: - Conversation Service
+
+    @Test func conversationCreate() async throws {
+        MockURLProtocol.responseData = """
+        {"conversation_id":"conv-1","title":"Test Chat","system_prompt":"You are helpful","created_at":1700000000}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let conv = try await client.conversations.createConversation(title: "Test Chat", systemPrompt: "You are helpful")
+        #expect(conv.conversationId == "conv-1")
+        #expect(conv.title == "Test Chat")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/conversations"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/ai/conversations"))
+
+        let body = lastCapturedBody()
+        #expect(body?["title"] as? String == "Test Chat")
+        #expect(body?["system_prompt"] as? String == "You are helpful")
+    }
+
+    @Test func conversationList() async throws {
+        MockURLProtocol.responseData = """
+        {"items":[{"conversation_id":"conv-1","title":"Test Chat","message_count":3,"created_at":1700000000}],"next_token":"tok-2"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.conversations.listConversations()
+        #expect(response.allConversations.count == 1)
+        #expect(response.allConversations[0].conversationId == "conv-1")
+        #expect(response.nextToken == "tok-2")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/conversations"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/ai/conversations"))
+    }
+
+    @Test func conversationListWithPagination() async throws {
+        MockURLProtocol.responseData = """
+        {"items":[{"conversation_id":"conv-2","title":"Page 2","message_count":1,"created_at":1700000000}]}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        _ = try await client.conversations.listConversations(nextToken: "tok-2")
+        #expect(lastCapturedMethod() == "GET")
+        // Verify pagination token is sent as query parameter
+        let url = lastCapturedRequest()?.url?.absoluteString ?? ""
+        #expect(url.contains("next_token=tok-2"))
+    }
+
+    @Test func conversationGet() async throws {
+        MockURLProtocol.responseData = """
+        {"conversation_id":"conv-1","title":"Test Chat","system_prompt":"Be helpful","message_count":5,"created_at":1700000000,"updated_at":1700000001}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let conv = try await client.conversations.getConversation(id: "conv-1")
+        #expect(conv.conversationId == "conv-1")
+        #expect(conv.systemPrompt == "Be helpful")
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/conversations/conv-1"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/ai/conversations/conv-1"))
+    }
+
+    @Test func conversationSendMessage() async throws {
+        MockURLProtocol.responseData = """
+        {"message":{"message_id":"msg-1","conversation_id":"conv-1","role":"assistant","content":"Hello there!","created_at":1700000000}}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.conversations.sendMessage(conversationId: "conv-1", content: "Hi!")
+        #expect(response.message?.content == "Hello there!")
+        #expect(response.message?.role == "assistant")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/conversations/conv-1/messages"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/ai/conversations/conv-1/messages"))
+
+        let body = lastCapturedBody()
+        #expect(body?["content"] as? String == "Hi!")
+    }
+
+    @Test func conversationSendMessageWithModel() async throws {
+        MockURLProtocol.responseData = """
+        {"message":{"message_id":"msg-2","conversation_id":"conv-1","role":"assistant","content":"Response","model":"gpt-4","created_at":1700000000}}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        _ = try await client.conversations.sendMessage(conversationId: "conv-1", content: "Hello", stream: false, model: "gpt-4")
+
+        let body = lastCapturedBody()
+        #expect(body?["content"] as? String == "Hello")
+        #expect(body?["model"] as? String == "gpt-4")
+        #expect(body?["stream"] as? Bool == false)
+    }
+
+    @Test func conversationDelete() async throws {
+        MockURLProtocol.responseData = """
+        {"success":true,"message":"Conversation deleted"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.conversations.deleteConversation(id: "conv-1")
+        #expect(response.success == true)
+        #expect(lastCapturedMethod() == "DELETE")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/ai/conversations/conv-1"))
+        #expect(routeExists(method: "DELETE", path: "/apps/test-app/ai/conversations/conv-1"))
+    }
+
+    // MARK: - Notification Service
+
+    @Test func notificationRegisterDevice() async throws {
+        MockURLProtocol.responseData = """
+        {"success":true,"device_id":"device-1","message":"Device registered"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.notifications.registerDevice(token: "apns-token-abc", platform: "ios", deviceId: "device-1")
+        #expect(response.success == true)
+        #expect(response.deviceId == "device-1")
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/notifications/register"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/notifications/register"))
+
+        let body = lastCapturedBody()
+        #expect(body?["token"] as? String == "apns-token-abc")
+        #expect(body?["platform"] as? String == "ios")
+        #expect(body?["device_id"] as? String == "device-1")
+    }
+
+    @Test func notificationUnregisterDevice() async throws {
+        MockURLProtocol.responseData = """
+        {"success":true,"message":"Device unregistered"}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.notifications.unregisterDevice(deviceId: "device-1")
+        #expect(response.success == true)
+        #expect(lastCapturedMethod() == "DELETE")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/notifications/register/device-1"))
+        #expect(routeExists(method: "DELETE", path: "/apps/test-app/notifications/register/device-1"))
+    }
+
+    // MARK: - Response Decoding Validation (New services)
+
+    @Test func userProfileDecodesFromRealShape() throws {
+        let json = """
+        {"user_id":"u-1","app_id":"test-app","display_name":"Alice","avatar_url":"https://example.com/a.png","bio":"Hello","preferences":{"theme":"dark"},"custom_fields":{"role":"admin"},"created_at":1700000000.0,"updated_at":1700000001.0}
+        """.data(using: .utf8)!
+        let profile = try JSONDecoder().decode(UserProfile.self, from: json)
+        #expect(profile.userId == "u-1")
+        #expect(profile.displayName == "Alice")
+        #expect(profile.bio == "Hello")
+    }
+
+    @Test func userProfilePublicDecodesFromRealShape() throws {
+        let json = """
+        {"user_id":"u-2","display_name":"Bob","avatar_url":"https://example.com/b.png","bio":"Public"}
+        """.data(using: .utf8)!
+        let profile = try JSONDecoder().decode(UserProfilePublic.self, from: json)
+        #expect(profile.userId == "u-2")
+        #expect(profile.displayName == "Bob")
+    }
+
+    @Test func aiConversationDecodesFromRealShape() throws {
+        let json = """
+        {"conversation_id":"conv-1","title":"Test","message_count":3,"created_at":1700000000,"updated_at":1700000001}
+        """.data(using: .utf8)!
+        let conv = try JSONDecoder().decode(AIConversation.self, from: json)
+        #expect(conv.conversationId == "conv-1")
+        #expect(conv.title == "Test")
+        #expect(conv.messageCount == 3)
+    }
+
+    @Test func conversationMessageDecodesFromRealShape() throws {
+        let json = """
+        {"message_id":"msg-1","conversation_id":"conv-1","role":"assistant","content":"Hello!","model":"gpt-4","created_at":1700000000}
+        """.data(using: .utf8)!
+        let msg = try JSONDecoder().decode(ConversationMessage.self, from: json)
+        #expect(msg.messageId == "msg-1")
+        #expect(msg.role == "assistant")
+        #expect(msg.content == "Hello!")
     }
 }

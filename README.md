@@ -202,6 +202,87 @@ func moderate(text: String) async throws -> ModerationResponse
 
 ```
 
+### Profile (`client.profile`)
+
+User profile management: get and update your own profile, or view other users' public profiles. Available on all platforms.
+
+```swift
+// Get the authenticated user's profile
+func getProfile() async throws -> UserProfile
+
+// Update profile fields (only provided fields are changed)
+func updateProfile(
+    displayName: String? = nil,
+    avatarUrl: String? = nil,
+    bio: String? = nil,
+    preferences: [String: AnyCodable]? = nil,
+    customFields: [String: AnyCodable]? = nil
+) async throws -> UserProfile
+
+// Get another user's public profile
+func getPublicProfile(userId: String) async throws -> UserProfilePublic
+```
+
+### Account (`client.account`)
+
+User-initiated account deletion. Available on all platforms.
+
+```swift
+// Delete the authenticated user's account (permanent, cannot be undone)
+func deleteAccount(reason: String? = nil) async throws -> DeleteAccountResponse
+```
+
+### File Storage (`client.files`)
+
+File upload, listing, retrieval, and deletion. Upload files by first requesting a pre-signed URL, then uploading directly to storage. Available on all platforms.
+
+```swift
+// Get a pre-signed upload URL
+func getUploadUrl(filename: String, contentType: String) async throws -> GetUploadUrlResponse
+
+// List all files for the authenticated user
+func listFiles() async throws -> ListFilesResponse
+
+// Get metadata for a specific file
+func getFile(fileId: String) async throws -> UserFile
+
+// Delete a file
+func deleteFile(fileId: String) async throws -> DeleteFileResponse
+```
+
+### Conversations (`client.conversations`)
+
+Persistent AI conversation management for multi-turn interactions. Create conversations, send messages, and retrieve history. Available on all platforms.
+
+```swift
+// Create a new conversation
+func createConversation(title: String? = nil, systemPrompt: String? = nil, metadata: [String: AnyCodable]? = nil) async throws -> AIConversationDetail
+
+// List conversations (paginated)
+func listConversations(nextToken: String? = nil) async throws -> ListConversationsResponse
+
+// Get a conversation with message history
+func getConversation(id: String) async throws -> AIConversationDetail
+
+// Send a message and get the AI response
+func sendMessage(conversationId: String, content: String, stream: Bool? = nil, model: String? = nil) async throws -> SendMessageResponse
+
+// Delete a conversation
+func deleteConversation(id: String) async throws -> DeleteConversationResponse
+```
+
+### Notifications (`client.notifications`)
+
+Push notification device registration and unregistration. Available on all platforms.
+
+```swift
+// Register a device for push notifications
+func registerDevice(token: String, platform: String, deviceId: String) async throws -> RegisterDeviceResponse
+
+// Unregister a device
+func unregisterDevice(deviceId: String) async throws -> UnregisterDeviceResponse
+```
+
 ### Apple IAP (`client.appleIap`) -- iOS only
 
 Apple In-App Purchase verification, restore, entitlement checks, and client commerce configuration.

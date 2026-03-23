@@ -80,6 +80,15 @@ public class SdkHttpClient {
         return try await request(method: "DELETE", path: path, body: nil as String?, authMode: authMode)
     }
 
+    /// Make a DELETE request with a JSON body.
+    public func delete<T: Decodable, B: Encodable>(
+        _ path: String,
+        body: B,
+        authMode: AuthMode = .bearer
+    ) async throws -> T {
+        return try await request(method: "DELETE", path: path, body: body, authMode: authMode)
+    }
+
     private func request<T: Decodable, B: Encodable>(
         method: String,
         path: String,
