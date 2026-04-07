@@ -71,6 +71,8 @@ public class MagicAppsClient {
     public let conversations: ConversationService
     /// Push notification registration service (all platforms).
     public let notifications: NotificationService
+    /// Email image and text service (all platforms).
+    public let email: EmailService
 
     public init(config: SdkConfig) {
         #if os(iOS) || os(tvOS) || os(watchOS)
@@ -100,6 +102,7 @@ public class MagicAppsClient {
         self.files = FileStorageService(http: http)
         self.conversations = ConversationService(http: http)
         self.notifications = NotificationService(http: http)
+        self.email = EmailService(http: http)
 
         registry.register(auth)
         registry.register(appleAuth)
@@ -116,6 +119,7 @@ public class MagicAppsClient {
         registry.register(files)
         registry.register(conversations)
         registry.register(notifications)
+        registry.register(email)
     }
 
     /// Health check - verifies connectivity to the MagicApps API.

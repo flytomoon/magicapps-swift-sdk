@@ -117,6 +117,12 @@ let API_ROUTES: [(method: String, path: String)] = [
     // Notifications
     ("POST", "/apps/{app_id}/notifications/register"),
     ("DELETE", "/apps/{app_id}/notifications/register/{device_id}"),
+    // Email Images/Text
+    ("POST", "/apps/{app_id}/routines/email-image/tokens"),
+    ("POST", "/apps/{app_id}/routines/email-image/{token}"),
+    ("POST", "/apps/{app_id}/routines/email-text/tokens"),
+    ("POST", "/apps/{app_id}/routines/email-text/{token}"),
+    ("GET", "/apps/{app_id}/routines/email-status/{token}"),
 ]
 
 /// Check whether a concrete path + method matches any API Gateway route.
@@ -134,6 +140,7 @@ func routeExists(method: String, path: String) -> Bool {
             .replacingOccurrences(of: "{file_id}", with: "file-1")
             .replacingOccurrences(of: "{conversation_id}", with: "conv-1")
             .replacingOccurrences(of: "{device_id}", with: "device-1")
+            .replacingOccurrences(of: "{token}", with: "tok-1")
         let methodMatch = route.method == "ANY" || route.method == method
         return methodMatch && resolved == path
     }
@@ -1199,5 +1206,168 @@ struct ContractTests {
         #expect(msg.messageId == "msg-1")
         #expect(msg.role == "assistant")
         #expect(msg.content == "Hello!")
+    }
+
+    // MARK: - Email Service
+
+    @Test func emailCreateImageToken() async throws {
+        // Source: lambda/email_images/index.js handleCreateImageToken
+        MockURLProtocol.responseData = """
+        {"token":"img-tok-abc123","image_url":"https://cdn.example.com/email-images/img-tok-abc123.jpg","expires_at":1749676000}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.email.createImageToken(ttlSeconds: 3600)
+        #expect(response.token == "img-tok-abc123")
+        #expect(response.imageUrl == "https://cdn.example.com/email-images/img-tok-abc123.jpg")
+        #expect(response.expiresAt == 1749676000)
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/routines/email-image/tokens"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/routines/email-image/tokens"))
+
+        let body = lastCapturedBody()
+        #expect(body?["ttl_seconds"] as? Int == 3600)
+    }
+
+    @Test func emailCreateImageTokenUsesOwnerAuth() async throws {
+        MockURLProtocol.responseData = """
+        {"token":"tok","image_url":"https://example.com/tok.jpg","expires_at":1749676000}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        _ = try await client.email.createImageToken()
+        let authHeader = lastCapturedRequest()?.value(forHTTPHeaderField: "Authorization")
+        #expect(authHeader == "Bearer owner-token")
+    }
+
+    @Test func emailUploadImage() async throws {
+        // Source: lambda/email_images/index.js handleUploadImage — returns 204
+        MockURLProtocol.responseStatus = 204
+        MockURLProtocol.responseData = Data()
+
+        let client = makeClient()
+        let jpegBytes = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10])
+        try await client.email.uploadImage(
+            token: "tok-1",
+            imageData: jpegBytes,
+            transform: "thumbnail",
+            query: "w=200&h=200"
+        )
+
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/routines/email-image/tok-1"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/routines/email-image/tok-1"))
+
+        let body = lastCapturedBody()
+        #expect(body?["image_jpeg_base64"] as? String == jpegBytes.base64EncodedString())
+        #expect(body?["transform"] as? String == "thumbnail")
+        #expect(body?["query"] as? String == "w=200&h=200")
+    }
+
+    @Test func emailCreateTextToken() async throws {
+        // Source: lambda/email_images/index.js handleCreateTextToken
+        MockURLProtocol.responseData = """
+        {"token":"txt-tok-xyz789","text_url":"https://cdn.example.com/email-text/txt-tok-xyz789","expires_at":1749676000}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let response = try await client.email.createTextToken(ttlSeconds: 1800)
+        #expect(response.token == "txt-tok-xyz789")
+        #expect(response.textUrl == "https://cdn.example.com/email-text/txt-tok-xyz789")
+        #expect(response.expiresAt == 1749676000)
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/routines/email-text/tokens"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/routines/email-text/tokens"))
+
+        let body = lastCapturedBody()
+        #expect(body?["ttl_seconds"] as? Int == 1800)
+    }
+
+    @Test func emailUploadText() async throws {
+        // Source: lambda/email_images/index.js handleUploadText — returns 204
+        // The primary field is "sentence", NOT "text"
+        MockURLProtocol.responseStatus = 204
+        MockURLProtocol.responseData = Data()
+
+        let client = makeClient()
+        try await client.email.uploadText(
+            token: "tok-1",
+            sentence: "Your order has shipped!"
+        )
+
+        #expect(lastCapturedMethod() == "POST")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/routines/email-text/tok-1"))
+        #expect(routeExists(method: "POST", path: "/apps/test-app/routines/email-text/tok-1"))
+
+        let body = lastCapturedBody()
+        #expect(body?["sentence"] as? String == "Your order has shipped!")
+        #expect(body?["text"] == nil) // "text" is a dead parameter the backend ignores
+    }
+
+    @Test func emailGetTokenStatus() async throws {
+        // Source: lambda/email_images/index.js handleGetTokenStatus
+        MockURLProtocol.responseData = """
+        {"token":"tok-1","type":"image","state":"ready","ready_at":1741900000,"consumed_at":null,"expires_at":1749676000,"updated_at":1741900000}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        let status = try await client.email.getTokenStatus(token: "tok-1")
+        #expect(status.token == "tok-1")
+        #expect(status.type == "image")
+        #expect(status.state == "ready")
+        #expect(status.readyAt == 1741900000)
+        #expect(status.consumedAt == nil)
+        #expect(status.expiresAt == 1749676000)
+        #expect(status.updatedAt == 1741900000)
+        #expect(lastCapturedMethod() == "GET")
+        #expect(lastCapturedPath()!.hasSuffix("/apps/test-app/routines/email-status/tok-1"))
+        #expect(routeExists(method: "GET", path: "/apps/test-app/routines/email-status/tok-1"))
+    }
+
+    @Test func emailGetTokenStatusUsesOwnerAuth() async throws {
+        MockURLProtocol.responseData = """
+        {"token":"tok-1","type":"text","state":"pending","expires_at":1749676000,"updated_at":1741900000}
+        """.data(using: .utf8)!
+
+        let client = makeClient()
+        _ = try await client.email.getTokenStatus(token: "tok-1")
+        let authHeader = lastCapturedRequest()?.value(forHTTPHeaderField: "Authorization")
+        #expect(authHeader == "Bearer owner-token")
+    }
+
+    // MARK: - Email Response Decoding Validation
+
+    @Test func createImageTokenResponseDecodesFromRealShape() throws {
+        let json = """
+        {"token":"img-tok-abc123","image_url":"https://cdn.example.com/email-images/img-tok-abc123.jpg","expires_at":1749676000}
+        """.data(using: .utf8)!
+        let response = try JSONDecoder().decode(CreateImageTokenResponse.self, from: json)
+        #expect(response.token == "img-tok-abc123")
+        #expect(response.imageUrl == "https://cdn.example.com/email-images/img-tok-abc123.jpg")
+        #expect(response.expiresAt == 1749676000)
+    }
+
+    @Test func createTextTokenResponseDecodesFromRealShape() throws {
+        let json = """
+        {"token":"txt-tok-xyz789","text_url":"https://cdn.example.com/email-text/txt-tok-xyz789","expires_at":1749676000}
+        """.data(using: .utf8)!
+        let response = try JSONDecoder().decode(CreateTextTokenResponse.self, from: json)
+        #expect(response.token == "txt-tok-xyz789")
+        #expect(response.textUrl == "https://cdn.example.com/email-text/txt-tok-xyz789")
+        #expect(response.expiresAt == 1749676000)
+    }
+
+    @Test func emailTokenStatusDecodesConsumedLifecycle() throws {
+        let json = """
+        {"token":"txt-tok-xyz789","type":"text","state":"consumed","ready_at":1741900000,"consumed_at":1741901000,"expires_at":1749676000,"updated_at":1741901000}
+        """.data(using: .utf8)!
+        let status = try JSONDecoder().decode(EmailTokenStatus.self, from: json)
+        #expect(status.token == "txt-tok-xyz789")
+        #expect(status.type == "text")
+        #expect(status.state == "consumed")
+        #expect(status.readyAt == 1741900000)
+        #expect(status.consumedAt == 1741901000)
+        #expect(status.expiresAt == 1749676000)
+        #expect(status.updatedAt == 1741901000)
     }
 }
