@@ -243,4 +243,46 @@ public class EmailService: ServiceModule {
             authMode: .owner
         )
     }
+
+    /// Send tokenized content via email.
+    ///
+    /// - Parameters:
+    ///   - to: The recipient email address.
+    ///   - token: The content token (image or text) to include in the email.
+    ///   - subject: The email subject line.
+    ///   - senderName: Optional display name for the sender.
+    /// - Returns: The send result including message ID and status.
+    public func send(
+        to: String,
+        token: String,
+        subject: String,
+        senderName: String? = nil
+    ) async throws -> EmailSendResponse {
+        var body: [String: AnyCodable] = [
+            "to": AnyCodable(to),
+            "token": AnyCodable(token),
+            "subject": AnyCodable(subject),
+        ]
+        if let name = senderName {
+            body["sender_name"] = AnyCodable(name)
+        }
+        return try await http.post(
+            "/apps/\(http.appId)/routines/email-send",
+            body: body,
+            authMode: .owner
+        )
+    }
+}
+
+/// Response from sending an email.
+public struct EmailSendResponse: Decodable {
+    /// The SES message identifier.
+    public let messageId: String
+    /// The delivery status (e.g., `"sent"`).
+    public let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case messageId = "message_id"
+        case status
+    }
 }
