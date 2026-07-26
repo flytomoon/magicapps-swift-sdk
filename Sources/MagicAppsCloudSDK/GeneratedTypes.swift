@@ -140,6 +140,50 @@ public struct ErrorResponse: Codable, Sendable {
     public let message: String
 }
 
+public struct AffiliateEnrollResponse: Codable, Sendable {
+    public let code: String
+    public let shareUrl: String
+
+    enum CodingKeys: String, CodingKey {
+        case code
+        case shareUrl = "share_url"
+    }
+}
+
+/// A VoxKit SDK license record (never includes the raw key).
+public struct LicenseInfo: Codable, Sendable {
+    /// License id (license_key_hash).
+    public let id: String
+    public let customerId: String
+    public let bundleIds: [String]
+    public let features: [String]
+    public let status: String
+    /// Epoch seconds when issued.
+    public let issuedAt: Int?
+    /// Epoch seconds when it expires, or null for no expiry.
+    public let expiresAt: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case customerId = "customer_id"
+        case bundleIds = "bundle_ids"
+        case features
+        case status
+        case issuedAt = "issued_at"
+        case expiresAt = "expires_at"
+    }
+}
+
+public struct LicenseActivateRequest: Codable, Sendable {
+    public let licenseKey: String
+    public let bundleId: String
+}
+
+public struct LicenseTokenResponse: Codable, Sendable {
+    /// Short-lived Ed25519-signed license token verified on-device.
+    public let token: String
+}
+
 /// Full user profile (returned to the profile owner)
 public struct UserProfile: Codable, Sendable {
     public let userId: String?
